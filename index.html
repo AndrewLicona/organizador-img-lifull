@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- v2.1 — Descarga con carpeta nombrada via File System Access API -->
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -494,7 +495,7 @@
         <div class="header-actions">
             <label for="fileInput" class="btn-file">📂 Cargar ZIP / Fotos</label>
             <input type="file" id="fileInput" accept=".zip,image/*" multiple>
-            <button class="btn-success" onclick="downloadLoose()">📥 Descargar Fotos Sueltas</button>
+            <button class="btn-success" onclick="saveToFolder()">📁 Guardar en Carpeta</button>
             <button class="btn-warning" onclick="exportZip()">📦 Exportar ZIP</button>
             <button class="btn-secondary" onclick="toggleFS()" title="Pantalla completa">⛶ Pantalla Completa</button>
         </div>
@@ -919,41 +920,116 @@ async function getBestBlob(canvas) {
     return { blob, ext: '.jpg' };
 }
 
-async function downloadLoose() {
-    if (!images.length) { showToast('No hay imágenes para descargar', '⚠️', true); return; }
-    const exp = Object.assign(document.createElement('canvas'), { width: CANVAS_W, height: CANVAS_H });
-    showProgress('Descargando fotos sueltas...', 'Renderizando a 1980×980 px  |  máx. 1.5 MB');
-    try {
-        for (let i = 0; i < images.length; i++) {
-            updateProgress(i+1, images.length, `Renderizando ${pad(i+1)}.png...`);
-            drawOnCanvas(exp, images[i]);
-            const { blob, ext } = await getBestBlob(exp);
-            const a = Object.assign(document.createElement('a'), {
-                href:     URL.createObjectURL(blob),
-                download: pad(i+1) + ext
+// ════════════════════════════════════════════════════════════
+// GUARDAR EN CARPETA — File System Access API (Chrome/Edge moderno)
+// Si no soporta showDirectoryPicker → descarga un ZIP automáticamente
+// ════════════════════════════════════════════════════════════
+
+async function saveToFolder() {
+    if (!images.length) {
+        showToast('No hay imágenes para guardar', '⚠️', true);
+        return;
+    }
+
+    // Pedir nombre de carpeta al usuario
+    const folderName = prompt(
+        'Nombre de la carpeta donde se guardarán las imágenes:',
+        zipBase || 'Imagenes_Organizadas'
+    );
+    if (!folderName || !folderName.trim()) return;
+    const sanitized = folderName.trim().replace(/[<>:"/\\|?*]/g, '_');
+
+    // ── Rama A: File System Access API disponible (Chrome/Edge) ──────────────
+    if (typeof window.showDirectoryPicker === 'function') {
+        try {
+            // IMPORTANTE: showDirectoryPicker debe ser la PRIMERA llamada async
+            // sin ningún await previo, para que Chrome acepte el gesto del usuario.
+            const dirHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
+
+            // El toast lo mostramos DESPUÉS de que el usuario eligió la carpeta
+            showToast('Carpeta seleccionada. Guardando imágenes...', '📂');
+
+            // Crear subcarpeta con el nombre elegido dentro de donde eligió el usuario
+            let subDir;
+            try {
+                subDir = await dirHandle.getDirectoryHandle(sanitized, { create: true });
+            } catch {
+                subDir = dirHandle;
+            }
+
+            const exp = Object.assign(document.createElement('canvas'), {
+                width: CANVAS_W, height: CANVAS_H
             });
-            document.body.appendChild(a); a.click(); document.body.removeChild(a);
-            URL.revokeObjectURL(a.href);
-            await tick(220);
+
+            showProgress(`Guardando en "${sanitized}"...`,
+                         `Renderizando ${images.length} imágenes a 1980×980 px`);
+
+            try {
+                for (let i = 0; i < images.length; i++) {
+                    updateProgress(i + 1, images.length, `Guardando ${pad(i + 1)}...`);
+                    drawOnCanvas(exp, images[i]);
+                    const { blob, ext } = await getBestBlob(exp);
+
+                    const fileName   = pad(i + 1) + ext;
+                    const fileHandle = await subDir.getFileHandle(fileName, { create: true });
+                    const writable   = await fileHandle.createWritable();
+                    await writable.write(blob);
+                    await writable.close();
+
+                    await tick(10);
+                }
+                showToast(
+                    `¡${images.length} imágenes guardadas en "${sanitized}"!`,
+                    '🎉'
+                );
+            } finally {
+                hideProgress();
+            }
+
+        } catch (err) {
+            hideProgress();
+            if (err.name === 'AbortError') {
+                // El usuario cerró el diálogo — no hacer nada más
+                showToast('Operación cancelada.', '⚠️');
+            } else if (err.name === 'NotAllowedError' || err.name === 'SecurityError') {
+                // Chrome bloqueó por permisos o contexto — fallback a ZIP
+                showToast('Permiso denegado por el navegador. Descargando como ZIP...', '📦');
+                await tick(1200);
+                await _exportZipWithName(sanitized);
+            } else {
+                showToast(`Error: ${err.message}. Descargando como ZIP...`, '⚠️');
+                await tick(1200);
+                await _exportZipWithName(sanitized);
+            }
         }
-        showToast(`¡${images.length} imágenes descargadas!`, '🎉');
-    } finally { hideProgress(); }
+
+    // ── Rama B: Fallback — descargar como ZIP ────────────────────────────────
+    } else {
+        showToast(
+            'Tu navegador no soporta selección de carpeta. Se descargará como ZIP.',
+            '📦'
+        );
+        await tick(1800);
+        await _exportZipWithName(sanitized);
+    }
 }
 
-async function exportZip() {
-    if (!images.length) { showToast('No hay imágenes para exportar', '⚠️', true); return; }
-    const name = prompt('Nombre para el archivo ZIP:', zipBase);
-    if (!name) return;
-    const exp    = Object.assign(document.createElement('canvas'), { width: CANVAS_W, height: CANVAS_H });
+/** Función interna compartida: genera y descarga un ZIP con el nombre dado */
+async function _exportZipWithName(name) {
+    const exp    = Object.assign(document.createElement('canvas'), {
+        width: CANVAS_W, height: CANVAS_H
+    });
     const zipOut = new JSZip();
-    const folder = zipOut.folder(name.trim());
-    showProgress('Generando archivo ZIP...', `Comprimiendo ${images.length} imágenes`);
+    const folder = zipOut.folder(name);
+
+    showProgress(`Generando ZIP "${name}.zip"...`,
+                 `Empaquetando ${images.length} imágenes`);
     try {
         for (let i = 0; i < images.length; i++) {
-            updateProgress(i+1, images.length, `Empaquetando ${pad(i+1)}.png...`);
+            updateProgress(i + 1, images.length, `Empaquetando ${pad(i + 1)}.png...`);
             drawOnCanvas(exp, images[i]);
             const { blob, ext } = await getBestBlob(exp);
-            folder.file(pad(i+1) + ext, blob);
+            folder.file(pad(i + 1) + ext, blob);
             await tick(10);
         }
         updateProgress(images.length, images.length, 'Comprimiendo ZIP final...');
@@ -963,12 +1039,21 @@ async function exportZip() {
         });
         const a = Object.assign(document.createElement('a'), {
             href:     URL.createObjectURL(content),
-            download: name.trim() + '.zip'
+            download: name + '.zip'
         });
         document.body.appendChild(a); a.click(); document.body.removeChild(a);
         URL.revokeObjectURL(a.href);
-        showToast(`¡ZIP "${name.trim()}.zip" generado con éxito!`, '📦');
-    } finally { hideProgress(); }
+        showToast(`¡ZIP "${name}.zip" descargado!`, '📦');
+    } finally {
+        hideProgress();
+    }
+}
+
+async function exportZip() {
+    if (!images.length) { showToast('No hay imágenes para exportar', '⚠️', true); return; }
+    const name = prompt('Nombre para el archivo ZIP:', zipBase || 'Imagenes_Organizadas');
+    if (!name || !name.trim()) return;
+    await _exportZipWithName(name.trim().replace(/[<>:"/\\|?*]/g, '_'));
 }
 
 // ════════════════════════════════════════════════════════════
