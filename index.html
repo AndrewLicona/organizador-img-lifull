@@ -1,0 +1,1032 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Organizador de Imágenes - Canvas Individual 1980x980</title>
+    <!-- JSZip para compresión y descompresión -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <!-- SortableJS para Drag & Drop ultra fluido -->
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+    <style>
+        :root {
+            --bg-main:        #0f0f17;
+            --bg-panel:       #161622;
+            --bg-card:        #1e1e2e;
+            --bg-card-hover:  #25273a;
+            --bg-card-active: #2b2e4a;
+            --bg-header:      #11111b;
+            --accent:         #89b4fa;
+            --accent-hover:   #b4befe;
+            --success:        #a6e3a1;
+            --warning:        #fab387;
+            --danger:         #f38ba8;
+            --text:           #cdd6f4;
+            --text-muted:     #9399b2;
+            --border:         #282a3e;
+            --drop-line:      #fab387;
+        }
+
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+
+        body {
+            background: var(--bg-main);
+            color: var(--text);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* ─── HEADER ─── */
+        header {
+            background: var(--bg-header);
+            padding: 11px 22px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+            gap: 12px;
+        }
+
+        .brand h1 { font-size: 1.15rem; color: var(--accent); display: flex; align-items: center; gap: 9px; }
+        .brand p  { font-size: 0.78rem; color: var(--text-muted); margin-top: 2px; }
+
+        .header-actions { display: flex; gap: 7px; flex-wrap: nowrap; }
+
+        button, .btn-file {
+            background: var(--accent);
+            color: #0f0f17;
+            border: none;
+            padding: 8px 14px;
+            border-radius: 7px;
+            font-weight: 700;
+            font-size: 0.83rem;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            transition: background 0.18s ease, transform 0.1s ease;
+            text-decoration: none;
+            white-space: nowrap;
+        }
+        button:hover, .btn-file:hover { background: var(--accent-hover); transform: translateY(-1px); }
+        button:active, .btn-file:active { transform: translateY(0); }
+
+        .btn-success { background: var(--success); }
+        .btn-success:hover { background: #c3f0bd; }
+
+        .btn-warning { background: var(--warning); color: #0f0f17; }
+        .btn-warning:hover { background: #fcd0af; }
+
+        .btn-secondary { background: var(--border); color: var(--text); }
+        .btn-secondary:hover { background: #373a55; }
+
+        .btn-danger { background: var(--danger); color: #0f0f17; padding: 4px 8px; font-size: 0.78rem; }
+        .btn-danger:hover { background: #f7aabe; }
+
+        /* ─── LAYOUT ─── */
+        .app-layout {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* ─── SIDEBAR ─── */
+        .sidebar {
+            width: 420px;
+            min-width: 320px;
+            background: var(--bg-panel);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+        }
+
+        .sidebar-header {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border);
+            background: var(--bg-main);
+            flex-shrink: 0;
+        }
+
+        .sidebar-header h2 {
+            font-size: 1rem;
+            color: var(--text);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .sidebar-header .hint {
+            font-size: 0.77rem;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        .sidebar-header .count {
+            font-size: 0.82rem;
+            color: var(--accent);
+            margin-top: 2px;
+        }
+
+        /* La lista SortableJS — NO se destruye durante drag */
+        .list-items {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            scrollbar-width: thin;
+            scrollbar-color: var(--border) var(--bg-main);
+        }
+
+        /* ─── TARJETAS ─── */
+        .item-card {
+            background: var(--bg-card);
+            border: 1.5px solid var(--border);
+            border-radius: 8px;
+            padding: 8px 10px;
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            cursor: default;
+            /* 
+              CLAVE: solo transition de colores/sombras, NUNCA de transform durante drag
+              (transform interfiere con el cálculo de posición de SortableJS)
+            */
+            transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+            will-change: transform;
+        }
+
+        .item-card:hover:not(.sortable-chosen):not(.sortable-ghost) {
+            border-color: var(--accent);
+            background: var(--bg-card-hover);
+        }
+
+        .item-card.active {
+            background: var(--bg-card-active);
+            border-color: var(--accent);
+            box-shadow: 0 0 12px rgba(137,180,250,0.25);
+        }
+
+        /* Estado fantasma (la tarjeta original durante el drag) */
+        .item-card.sortable-ghost {
+            opacity: 0.2;
+            background: var(--border) !important;
+            border: 2px dashed var(--drop-line) !important;
+            box-shadow: none !important;
+            transform: none !important;
+        }
+
+        /* La tarjeta que el usuario está arrastrando (clone real) */
+        .item-card.sortable-chosen {
+            cursor: grabbing !important;
+            box-shadow: 0 10px 28px rgba(0,0,0,0.65);
+            border-color: var(--drop-line) !important;
+            background: var(--bg-card-active) !important;
+            transform: rotate(0.8deg) scale(1.02);
+        }
+
+        /* Fallback clone de arrastre */
+        .item-card.sortable-drag {
+            opacity: 1 !important;
+            box-shadow: 0 14px 36px rgba(0,0,0,0.7);
+        }
+
+        .drag-handle {
+            font-size: 1.15rem;
+            color: var(--text-muted);
+            cursor: grab;
+            padding: 3px 5px;
+            border-radius: 4px;
+            transition: color 0.15s;
+            flex-shrink: 0;
+        }
+        .drag-handle:hover { color: var(--accent); }
+        .item-card.active .drag-handle { color: var(--accent); }
+
+        .pos-badge {
+            background: var(--accent);
+            color: #0f0f17;
+            font-weight: 800;
+            font-size: 0.8rem;
+            padding: 3px 7px;
+            border-radius: 5px;
+            min-width: 38px;
+            text-align: center;
+            flex-shrink: 0;
+            transition: background 0.15s;
+        }
+        .item-card.active .pos-badge { background: var(--success); }
+
+        .item-thumb {
+            width: 62px;
+            height: 46px;
+            background: var(--bg-header);
+            border-radius: 4px;
+            overflow: hidden;
+            flex-shrink: 0;
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .item-thumb img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            pointer-events: none;
+            display: block;
+        }
+
+        .item-details { flex: 1; min-width: 0; }
+        .item-name {
+            font-size: 0.82rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: var(--text);
+            font-weight: 500;
+            pointer-events: none;
+        }
+
+        .item-btns {
+            display: flex;
+            gap: 3px;
+            flex-shrink: 0;
+        }
+        .btn-mini {
+            background: var(--border);
+            color: var(--text);
+            border: none;
+            padding: 4px 7px;
+            border-radius: 4px;
+            font-size: 0.73rem;
+            cursor: pointer;
+            transition: background 0.12s;
+        }
+        .btn-mini:hover { background: #3a3d5a; }
+
+        /* ─── CANVAS AREA ─── */
+        .canvas-area {
+            flex: 1;
+            background: var(--bg-card);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .canvas-toolbar {
+            padding: 10px 22px;
+            background: var(--bg-main);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .canvas-info {
+            font-size: 0.92rem;
+            font-weight: 700;
+            color: var(--accent);
+        }
+
+        .canvas-controls {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 0.82rem;
+            color: var(--text-muted);
+        }
+        .canvas-controls input[type="number"] {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 5px 8px;
+            border-radius: 5px;
+            width: 65px;
+            font-size: 0.82rem;
+        }
+        .canvas-controls input[type="number"]:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .canvas-viewport {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 22px;
+            overflow: hidden;
+        }
+
+        #mainCanvas {
+            max-width: 100%;
+            max-height: 100%;
+            background: #ffffff;
+            box-shadow: 0 4px 40px rgba(0,0,0,0.8);
+            border-radius: 3px;
+        }
+
+        .empty-placeholder {
+            text-align: center;
+            color: var(--text-muted);
+        }
+        .empty-placeholder h3 { color: var(--accent); margin-bottom: 8px; font-size: 1.1rem; }
+
+        .canvas-footer {
+            padding: 9px 22px;
+            background: var(--bg-main);
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        /* ─── STATUS BAR ─── */
+        .status-bar {
+            height: 28px;
+            background: var(--bg-header);
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 18px;
+            font-size: 0.77rem;
+            color: var(--text-muted);
+            flex-shrink: 0;
+        }
+
+        /* ─── MODAL PROGRESO ─── */
+        .progress-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(8, 8, 14, 0.82);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            backdrop-filter: blur(5px);
+        }
+        .progress-box {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 28px 34px;
+            width: 480px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.7);
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+        .progress-title { font-size: 1.08rem; font-weight: 700; color: var(--accent); }
+        .progress-sub   { font-size: 0.83rem; color: var(--text-muted); }
+        .progress-track {
+            width: 100%; height: 10px;
+            background: var(--bg-main);
+            border-radius: 5px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+        .progress-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--accent), var(--success));
+            border-radius: 5px;
+            transition: width 0.18s ease;
+        }
+        .progress-status {
+            font-size: 0.82rem;
+            color: var(--text);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        /* ─── TOAST ─── */
+        .toast {
+            position: fixed;
+            bottom: 44px;
+            right: 22px;
+            background: var(--bg-card-active);
+            border: 1.5px solid var(--success);
+            color: var(--text);
+            padding: 11px 18px;
+            border-radius: 9px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.88rem;
+            font-weight: 600;
+            z-index: 9999;
+            transform: translateY(80px);
+            opacity: 0;
+            transition: transform 0.28s cubic-bezier(0.34,1.56,0.64,1), opacity 0.25s ease;
+            pointer-events: none;
+            max-width: 420px;
+        }
+        .toast.show { transform: translateY(0); opacity: 1; }
+
+        /* ─── MISC ─── */
+        input[type="file"] { display: none; }
+
+        .sidebar-drop-zone {
+            margin: 6px 10px;
+            padding: 10px;
+            border: 2px dashed var(--accent);
+            border-radius: 7px;
+            text-align: center;
+            font-size: 0.8rem;
+            color: var(--accent);
+            background: rgba(137,180,250,0.07);
+            display: none;
+            flex-shrink: 0;
+        }
+
+        .no-items-msg {
+            text-align: center;
+            padding: 48px 16px;
+            color: var(--text-muted);
+        }
+        .no-items-msg p { margin-top: 8px; font-size: 0.85rem; line-height: 1.5; }
+    </style>
+</head>
+<body>
+
+    <!-- Modal de Progreso -->
+    <div id="progressModal" class="progress-modal">
+        <div class="progress-box">
+            <div id="progTitle" class="progress-title">Procesando...</div>
+            <div id="progSub"   class="progress-sub">Por favor espera</div>
+            <div class="progress-track">
+                <div id="progFill" class="progress-fill"></div>
+            </div>
+            <div class="progress-status">
+                <span id="progText">Iniciando...</span>
+                <span id="progPercent">0%</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast" class="toast">
+        <span id="toastIcon">✅</span>
+        <span id="toastMsg">Mensaje</span>
+    </div>
+
+    <header>
+        <div class="brand">
+            <h1>🖼️ Organizador de Imágenes</h1>
+            <p>Lienzo Individual 1980 × 980 px | Fondo Blanco | Peso máx. 1.5 MB</p>
+        </div>
+        <div class="header-actions">
+            <label for="fileInput" class="btn-file">📂 Cargar ZIP / Fotos</label>
+            <input type="file" id="fileInput" accept=".zip,image/*" multiple>
+            <button class="btn-success" onclick="downloadLoose()">📥 Descargar Fotos Sueltas</button>
+            <button class="btn-warning" onclick="exportZip()">📦 Exportar ZIP</button>
+            <button class="btn-secondary" onclick="toggleFS()" title="Pantalla completa">⛶ Pantalla Completa</button>
+        </div>
+    </header>
+
+    <div class="app-layout">
+
+        <!-- SIDEBAR -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h2>
+                    <span>📋 Lista de Imágenes</span>
+                    <button class="btn-danger" onclick="clearList()">🗑️ Vaciar</button>
+                </h2>
+                <div class="count" id="imgCount">0 imágenes cargadas</div>
+                <div class="hint">💡 Arrastra ☰ para reordenar · naranja = destino de inserción</div>
+            </div>
+            <div class="sidebar-drop-zone" id="dropZone">📂 Suelta archivos aquí</div>
+            <!-- 
+                CLAVE: este div es el contenedor de SortableJS.
+                NUNCA se hace innerHTML='' durante un drag activo.
+                Los nodos se actualizan con patch DOM individual.
+            -->
+            <div id="sortableList" class="list-items"></div>
+        </aside>
+
+        <!-- CANVAS AREA -->
+        <main class="canvas-area">
+            <div class="canvas-toolbar">
+                <div id="canvasTitle" class="canvas-info">Ninguna imagen seleccionada</div>
+                <div class="canvas-controls">
+                    <label>Márgenes Canvas (px):</label>
+                    <input type="number" id="marginInput" value="50" min="0" max="400"
+                           oninput="renderCanvas()">
+                    <span>Lienzo: 1980 × 980 px</span>
+                </div>
+            </div>
+
+            <div class="canvas-viewport" id="viewport">
+                <div id="placeholder" class="empty-placeholder">
+                    <h3>📁 No hay imágenes cargadas</h3>
+                    <p>Haz clic en "Cargar ZIP / Fotos" o arrastra archivos<br>desde tu explorador de Windows.</p>
+                </div>
+                <canvas id="mainCanvas" width="1980" height="980" style="display:none;"></canvas>
+            </div>
+
+            <div class="canvas-footer">
+                <button class="btn-secondary" onclick="prevImg()">◀ Anterior</button>
+                <span id="navCounter" style="font-weight:600; color:var(--text-muted);">0 / 0</span>
+                <button class="btn-secondary" onclick="nextImg()">Siguiente ▶</button>
+            </div>
+        </main>
+    </div>
+
+    <footer class="status-bar">
+        <span id="statusText">🟢 Listo para cargar imágenes</span>
+        <span>📐 Lienzo: 1980 × 980 px | Fondo Blanco | ⚖️ Peso máx: 1.5 MB por foto</span>
+    </footer>
+
+<script>
+// ════════════════════════════════════════════════════════════
+// ESTADO GLOBAL
+// ════════════════════════════════════════════════════════════
+const CANVAS_W   = 1980;
+const CANVAS_H   = 980;
+const MAX_BYTES  = 1.5 * 1024 * 1024;
+
+let images       = [];   // { id, name, blob, dataUrl, imgObj }
+let selIdx       = 0;
+let zipBase      = 'Imagenes_Organizadas';
+let sortableInst = null;
+let isDragging   = false; // true mientras SortableJS tiene control
+let toastTimer   = null;
+
+// ════════════════════════════════════════════════════════════
+// DOM REFS
+// ════════════════════════════════════════════════════════════
+const sortableList = document.getElementById('sortableList');
+const mainCanvas   = document.getElementById('mainCanvas');
+const placeholder  = document.getElementById('placeholder');
+const canvasTitle  = document.getElementById('canvasTitle');
+const navCounter   = document.getElementById('navCounter');
+const marginInput  = document.getElementById('marginInput');
+const fileInput    = document.getElementById('fileInput');
+const dropZone     = document.getElementById('dropZone');
+const statusText   = document.getElementById('statusText');
+const imgCount     = document.getElementById('imgCount');
+
+// ════════════════════════════════════════════════════════════
+// SORTABLEJS — inicializado UNA sola vez, el nodo NUNCA desaparece
+// ════════════════════════════════════════════════════════════
+sortableInst = new Sortable(sortableList, {
+    animation: 180,
+    easing: 'cubic-bezier(0.25, 1, 0.5, 1)',
+    ghostClass:   'sortable-ghost',
+    chosenClass:  'sortable-chosen',
+    dragClass:    'sortable-drag',
+    handle:       '.drag-handle',
+    // forceFallback: false  →  usa HTML5 nativo (más suave en escritorio)
+    forceFallback: false,
+    delay: 0,
+    delayOnTouchOnly: true,
+
+    onStart() {
+        isDragging = true;
+    },
+
+    onEnd(evt) {
+        isDragging = false;
+        if (evt.oldIndex === evt.newIndex) return;
+
+        // Reordenar el array de datos
+        const item = images.splice(evt.oldIndex, 1)[0];
+        images.splice(evt.newIndex, 0, item);
+        selIdx = evt.newIndex;
+
+        // Actualizar SOLO las badges de posición (parche mínimo, sin destruir nodos)
+        patchBadges();
+        updateActiveClass();
+        renderCanvas();
+        updateStatus();
+        showToast(`Reordenado: "${item.name}" → #${pad(evt.newIndex + 1)}`, '🔄');
+    }
+});
+
+// ════════════════════════════════════════════════════════════
+// PATCH DOM — actualizar solo lo que cambió, sin destruir nodos
+// ════════════════════════════════════════════════════════════
+
+/**
+ * Reconstrucción completa del DOM de la lista.
+ * Se llama SOLO en: carga de archivos, borrado, vaciar.
+ * NO se llama durante drag ni reorder de SortableJS.
+ */
+function rebuildList() {
+    if (images.length === 0) {
+        sortableList.innerHTML = `
+            <div class="no-items-msg">
+                📁 <strong>Ninguna imagen cargada</strong>
+                <p>Haz clic en "Cargar ZIP / Fotos"<br>o arrastra archivos al panel.</p>
+            </div>`;
+        placeholder.style.display = 'block';
+        mainCanvas.style.display  = 'none';
+        canvasTitle.textContent   = 'Ninguna imagen seleccionada';
+        navCounter.textContent    = '0 / 0';
+        imgCount.textContent      = '0 imágenes cargadas';
+        statusText.textContent    = '🟢 Listo para cargar imágenes';
+        return;
+    }
+
+    sortableList.innerHTML = '';
+    placeholder.style.display = 'none';
+    mainCanvas.style.display  = 'block';
+
+    images.forEach((item, idx) => {
+        sortableList.appendChild(createCard(item, idx));
+    });
+
+    patchBadges();
+    updateActiveClass();
+    updateStatus();
+    imgCount.textContent = `${images.length} imágenes cargadas`;
+}
+
+/** Crea un nodo tarjeta para una imagen */
+function createCard(item, idx) {
+    const card = document.createElement('div');
+    card.className = 'item-card';
+    card.dataset.id = item.id;
+
+    // Clic en la tarjeta → seleccionar (no interferir con drag ni botones)
+    card.addEventListener('click', (e) => {
+        if (isDragging) return;
+        if (e.target.closest('.item-btns')) return;
+        const i = images.findIndex(x => x.id === item.id);
+        if (i >= 0) selectItem(i);
+    });
+
+    card.innerHTML = `
+        <span class="drag-handle" title="Arrastra para reordenar">☰</span>
+        <span class="pos-badge">#${pad(idx + 1)}</span>
+        <div class="item-thumb">
+            <img src="${item.dataUrl}" alt="${item.name}" loading="lazy">
+        </div>
+        <div class="item-details">
+            <div class="item-name" title="${item.name}">${item.name}</div>
+        </div>
+        <div class="item-btns">
+            ${idx > 0
+                ? `<button class="btn-mini" title="Subir" onclick="moveItem('${item.id}',-1,event)">▲</button>`
+                : ''}
+            ${idx < images.length - 1
+                ? `<button class="btn-mini" title="Bajar" onclick="moveItem('${item.id}',+1,event)">▼</button>`
+                : ''}
+            <button class="btn-danger" onclick="deleteItem('${item.id}',event)">✖</button>
+        </div>
+    `;
+    return card;
+}
+
+/** Actualiza solo los badges #01, #02... sin tocar el resto del DOM */
+function patchBadges() {
+    const cards = sortableList.querySelectorAll('.item-card');
+    cards.forEach((card, i) => {
+        const badge = card.querySelector('.pos-badge');
+        if (badge) badge.textContent = '#' + pad(i + 1);
+    });
+    imgCount.textContent = `${images.length} imágenes cargadas`;
+}
+
+/** Actualiza solo la clase .active en las tarjetas */
+function updateActiveClass() {
+    const cards = sortableList.querySelectorAll('.item-card');
+    cards.forEach((card, i) => {
+        card.classList.toggle('active', i === selIdx);
+    });
+}
+
+// ════════════════════════════════════════════════════════════
+// SELECCIÓN Y NAVEGACIÓN
+// ════════════════════════════════════════════════════════════
+
+function selectItem(idx) {
+    if (idx < 0 || idx >= images.length) return;
+    selIdx = idx;
+    updateActiveClass();
+    renderCanvas();
+    updateStatus();
+}
+
+function prevImg() { if (selIdx > 0)                       selectItem(selIdx - 1); }
+function nextImg() { if (selIdx < images.length - 1)       selectItem(selIdx + 1); }
+
+// ════════════════════════════════════════════════════════════
+// MOVER Y BORRAR
+// ════════════════════════════════════════════════════════════
+
+function moveItem(id, delta, event) {
+    if (event) event.stopPropagation();
+    const from = images.findIndex(x => x.id === id);
+    const to   = from + delta;
+    if (from < 0 || to < 0 || to >= images.length) return;
+
+    const item = images.splice(from, 1)[0];
+    images.splice(to, 0, item);
+    selIdx = to;
+
+    rebuildList();
+    renderCanvas();
+    showToast(`Movido: "${item.name}" → #${pad(to + 1)}`, '🔄');
+}
+
+function deleteItem(id, event) {
+    if (event) event.stopPropagation();
+    const idx = images.findIndex(x => x.id === id);
+    if (idx < 0) return;
+    const removed = images.splice(idx, 1)[0];
+    if (selIdx >= images.length) selIdx = Math.max(0, images.length - 1);
+    rebuildList();
+    renderCanvas();
+    showToast(`Eliminada: "${removed.name}"`, '🗑️');
+}
+
+function clearList() {
+    if (!images.length) return;
+    if (!confirm('¿Deseas vaciar todas las imágenes de la lista?')) return;
+    images = [];
+    selIdx = 0;
+    rebuildList();
+    renderCanvas();
+    showToast('Lista de imágenes vaciada', '🧹');
+}
+
+// ════════════════════════════════════════════════════════════
+// CARGA DE ARCHIVOS
+// ════════════════════════════════════════════════════════════
+
+fileInput.addEventListener('change', e => handleFiles(Array.from(e.target.files)));
+
+window.addEventListener('dragover', e => {
+    if (isDragging) return;
+    if (e.dataTransfer?.types?.includes('Files')) {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'copy';
+        dropZone.style.display = 'block';
+    }
+});
+window.addEventListener('dragleave', e => {
+    if (isDragging) return;
+    if (e.clientX <= 0 || e.clientY <= 0 ||
+        e.clientX >= window.innerWidth || e.clientY >= window.innerHeight) {
+        dropZone.style.display = 'none';
+    }
+});
+window.addEventListener('drop', e => {
+    if (isDragging) return;
+    dropZone.style.display = 'none';
+    if (e.dataTransfer?.files?.length) {
+        e.preventDefault();
+        handleFiles(Array.from(e.dataTransfer.files));
+    }
+});
+
+async function handleFiles(files) {
+    showProgress('Cargando imágenes...', 'Extrayendo y generando miniaturas');
+    let loaded = 0;
+
+    try {
+        for (let i = 0; i < files.length; i++) {
+            const f = files[i];
+            updateProgress(i + 1, files.length, `Leyendo ${f.name}...`);
+
+            if (f.name.toLowerCase().endsWith('.zip')) {
+                zipBase = f.name.replace(/\.zip$/i, '');
+                await processZip(f);
+            } else if (f.type.startsWith('image/')) {
+                await addImage(f, f.name);
+                loaded++;
+            }
+            await tick(8);
+        }
+    } finally {
+        hideProgress();
+    }
+
+    if (images.length > 0) {
+        selIdx = 0;
+        rebuildList();
+        renderCanvas();
+        showToast(`¡${images.length} imágenes cargadas exitosamente!`, '✅');
+    }
+}
+
+async function processZip(file) {
+    try {
+        const zip     = await JSZip.loadAsync(file);
+        const entries = Object.keys(zip.files).sort();
+
+        for (let i = 0; i < entries.length; i++) {
+            const key   = entries[i];
+            const entry = zip.files[key];
+            if (entry.dir) continue;
+            if (!key.toLowerCase().match(/\.(png|jpe?g|webp|bmp|gif)$/)) continue;
+
+            updateProgress(i + 1, entries.length, `Extrayendo ${key.split('/').pop()}...`);
+            const blob = await entry.async('blob');
+            await addImage(blob, key.split('/').pop());
+        }
+    } catch (err) {
+        showToast('Error descomprimiendo ZIP: ' + err.message, '❌', true);
+    }
+}
+
+function addImage(blob, name) {
+    return new Promise(resolve => {
+        const reader = new FileReader();
+        reader.onload = e => {
+            const dataUrl = e.target.result;
+            const img     = new Image();
+            img.onload = () => {
+                images.push({
+                    id:      'i' + Math.random().toString(36).slice(2, 11),
+                    name,
+                    blob,
+                    dataUrl,
+                    imgObj: img
+                });
+                resolve();
+            };
+            img.src = dataUrl;
+        };
+        reader.readAsDataURL(blob);
+    });
+}
+
+// ════════════════════════════════════════════════════════════
+// CANVAS
+// ════════════════════════════════════════════════════════════
+
+function drawOnCanvas(targetCanvas, item) {
+    const ctx    = targetCanvas.getContext('2d');
+    const margin = Math.max(0, parseInt(marginInput.value) || 50);
+
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+
+    if (!item?.imgObj) return;
+
+    const availW = CANVAS_W - 2 * margin;
+    const availH = CANVAS_H - 2 * margin;
+    const scale  = Math.min(availW / item.imgObj.width, availH / item.imgObj.height);
+    const w      = item.imgObj.width  * scale;
+    const h      = item.imgObj.height * scale;
+    const x      = (CANVAS_W - w) / 2;
+    const y      = (CANVAS_H - h) / 2;
+
+    ctx.imageSmoothingEnabled  = true;
+    ctx.imageSmoothingQuality  = 'high';
+    ctx.drawImage(item.imgObj, x, y, w, h);
+}
+
+function renderCanvas() {
+    if (!images.length || selIdx >= images.length) return;
+    const cur = images[selIdx];
+    canvasTitle.textContent = `Visualizando: #${pad(selIdx+1)} — ${cur.name}  [Lienzo 1980×980 px]`;
+    navCounter.textContent  = `Imagen ${selIdx+1} de ${images.length}`;
+    drawOnCanvas(mainCanvas, cur);
+}
+
+// ════════════════════════════════════════════════════════════
+// EXPORTACIÓN
+// ════════════════════════════════════════════════════════════
+
+async function getBestBlob(canvas) {
+    let blob = await new Promise(r => canvas.toBlob(r, 'image/png'));
+    if (blob?.size <= MAX_BYTES) return { blob, ext: '.png' };
+
+    for (const q of [0.95, 0.90, 0.85, 0.80, 0.72]) {
+        blob = await new Promise(r => canvas.toBlob(r, 'image/jpeg', q));
+        if (blob?.size <= MAX_BYTES) return { blob, ext: '.jpg' };
+    }
+    return { blob, ext: '.jpg' };
+}
+
+async function downloadLoose() {
+    if (!images.length) { showToast('No hay imágenes para descargar', '⚠️', true); return; }
+    const exp = Object.assign(document.createElement('canvas'), { width: CANVAS_W, height: CANVAS_H });
+    showProgress('Descargando fotos sueltas...', 'Renderizando a 1980×980 px  |  máx. 1.5 MB');
+    try {
+        for (let i = 0; i < images.length; i++) {
+            updateProgress(i+1, images.length, `Renderizando ${pad(i+1)}.png...`);
+            drawOnCanvas(exp, images[i]);
+            const { blob, ext } = await getBestBlob(exp);
+            const a = Object.assign(document.createElement('a'), {
+                href:     URL.createObjectURL(blob),
+                download: pad(i+1) + ext
+            });
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+            URL.revokeObjectURL(a.href);
+            await tick(220);
+        }
+        showToast(`¡${images.length} imágenes descargadas!`, '🎉');
+    } finally { hideProgress(); }
+}
+
+async function exportZip() {
+    if (!images.length) { showToast('No hay imágenes para exportar', '⚠️', true); return; }
+    const name = prompt('Nombre para el archivo ZIP:', zipBase);
+    if (!name) return;
+    const exp    = Object.assign(document.createElement('canvas'), { width: CANVAS_W, height: CANVAS_H });
+    const zipOut = new JSZip();
+    const folder = zipOut.folder(name.trim());
+    showProgress('Generando archivo ZIP...', `Comprimiendo ${images.length} imágenes`);
+    try {
+        for (let i = 0; i < images.length; i++) {
+            updateProgress(i+1, images.length, `Empaquetando ${pad(i+1)}.png...`);
+            drawOnCanvas(exp, images[i]);
+            const { blob, ext } = await getBestBlob(exp);
+            folder.file(pad(i+1) + ext, blob);
+            await tick(10);
+        }
+        updateProgress(images.length, images.length, 'Comprimiendo ZIP final...');
+        const content = await zipOut.generateAsync({
+            type: 'blob', compression: 'DEFLATE',
+            compressionOptions: { level: 6 }
+        });
+        const a = Object.assign(document.createElement('a'), {
+            href:     URL.createObjectURL(content),
+            download: name.trim() + '.zip'
+        });
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        URL.revokeObjectURL(a.href);
+        showToast(`¡ZIP "${name.trim()}.zip" generado con éxito!`, '📦');
+    } finally { hideProgress(); }
+}
+
+// ════════════════════════════════════════════════════════════
+// UI HELPERS
+// ════════════════════════════════════════════════════════════
+
+function updateStatus() {
+    if (!images.length) {
+        statusText.textContent = '🟢 Listo para cargar imágenes';
+    } else {
+        statusText.textContent =
+            `🟢 ${images.length} imágenes listas  |  Activa: #${pad(selIdx+1)} (${images[selIdx].name})`;
+    }
+}
+
+function showProgress(title, sub) {
+    document.getElementById('progTitle').textContent   = title;
+    document.getElementById('progSub').textContent     = sub;
+    document.getElementById('progFill').style.width    = '0%';
+    document.getElementById('progText').textContent    = 'Iniciando...';
+    document.getElementById('progPercent').textContent = '0%';
+    document.getElementById('progressModal').style.display = 'flex';
+}
+function updateProgress(cur, total, detail) {
+    const pct = Math.round((cur / Math.max(1, total)) * 100);
+    document.getElementById('progFill').style.width    = pct + '%';
+    document.getElementById('progText').textContent    = detail || `${cur} de ${total}`;
+    document.getElementById('progPercent').textContent = pct + '%';
+}
+function hideProgress() {
+    document.getElementById('progressModal').style.display = 'none';
+}
+
+function showToast(msg, icon = '✅', isErr = false) {
+    const t = document.getElementById('toast');
+    document.getElementById('toastMsg').textContent  = msg;
+    document.getElementById('toastIcon').textContent = icon;
+    t.style.borderColor = isErr ? 'var(--danger)' : 'var(--success)';
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), 3800);
+}
+
+function pad(n) { return String(n).padStart(2, '0'); }
+function tick(ms = 0) { return new Promise(r => setTimeout(r, ms)); }
+
+function toggleFS() {
+    if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+    } else {
+        document.exitFullscreen?.();
+    }
+}
+
+// ════════════════════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════════════════════
+rebuildList();
+</script>
+</body>
+</html>
