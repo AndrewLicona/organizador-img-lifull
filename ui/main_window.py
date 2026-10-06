@@ -44,6 +44,7 @@ class MainWindow(tk.Tk):
         self.selected_index = 0
         self.margin_px = tk.IntVar(value=50)
         self.current_archive_name = "Imagenes_Organizadas"
+        self._render_after_id = None  # Para debounce del canvas
 
         # Aplicar estilos centralizados
         apply_theme_styles(self)
@@ -54,8 +55,43 @@ class MainWindow(tk.Tk):
         # Toast notification system
         self.toast = ToastNotification(self)
 
+        # Teclas de flecha globales
+        self.bind_all("<Left>",  self._key_prev)
+        self.bind_all("<Right>", self._key_next)
+        self.bind_all("<Up>",    self._key_move_up)
+        self.bind_all("<Down>",  self._key_move_down)
+
         # Protocolo de Cierre
         self.protocol("WM_DELETE_WINDOW", self.on_close)
+
+    # ─── Navegación por teclado ────────────────────────────
+    def _key_prev(self, event=None):
+        """Flecha izquierda: imagen anterior"""
+        if str(self.focus_get()) not in ('', str(self)):
+            return  # No interferir con inputs activos
+        self.select_prev()
+
+    def _key_next(self, event=None):
+        """Flecha derecha: imagen siguiente"""
+        if str(self.focus_get()) not in ('', str(self)):
+            return
+        self.select_next()
+
+    def _key_move_up(self, event=None):
+        """Flecha arriba: mover imagen seleccionada hacia arriba en la lista"""
+        if str(self.focus_get()) not in ('', str(self)):
+            return
+        if self.images_list and self.selected_index > 0:
+            self.reorder_item(self.selected_index, self.selected_index - 1)
+
+    def _key_move_down(self, event=None):
+        """Flecha abajo: mover imagen seleccionada hacia abajo en la lista"""
+        if str(self.focus_get()) not in ('', str(self)):
+            return
+        if self.images_list and self.selected_index < len(self.images_list) - 1:
+            self.reorder_item(self.selected_index, self.selected_index + 1)
+
+
 
     def toggle_fullscreen(self, event=None):
         self.is_fullscreen = not self.is_fullscreen
@@ -98,10 +134,10 @@ class MainWindow(tk.Tk):
         self.status_bar = tk.Frame(self, bg=THEME["bg_header"], height=28, padx=15, pady=4)
         self.status_bar.pack(side=tk.BOTTOM, fill=tk.X)
 
-        self.status_lbl = tk.Label(self.status_bar, text="🟢 Listo para cargar imágenes", font=("Segoe UI", 9), fg=THEME["text_muted"], bg=THEME["bg_header"])
+        self.status_lbl = tk.Label(self.status_bar, text="[ OK ] Listo para cargar imágenes", font=("Segoe UI", 9), fg=THEME["text_muted"], bg=THEME["bg_header"])
         self.status_lbl.pack(side=tk.LEFT)
 
-        specs_lbl = tk.Label(self.status_bar, text="📐 Lienzo: 1980 x 980 px | Fondo Blanco | ⚖️ Peso máx: 1.5 MB por foto", font=("Segoe UI", 9), fg=THEME["accent"], bg=THEME["bg_header"])
+        specs_lbl = tk.Label(self.status_bar, text="Lienzo: 1980 x 980 px  |  Fondo Blanco  |  Peso max: 1.5 MB por foto", font=("Segoe UI", 9), fg=THEME["accent"], bg=THEME["bg_header"])
         specs_lbl.pack(side=tk.RIGHT)
 
         self.refresh_all()
@@ -114,12 +150,19 @@ class MainWindow(tk.Tk):
         self.refresh_preview()
         count = len(self.images_list)
         if count > 0:
-            self.status_lbl.config(text=f"🟢 {count} imágenes listas | Seleccionada: #{self.selected_index + 1:02d} ({self.images_list[self.selected_index].filename})")
+            self.status_lbl.config(text=f"[ OK ] {count} imagenes listas  |  Activa: #{self.selected_index + 1:02d} ({self.images_list[self.selected_index].filename})")
         else:
-            self.status_lbl.config(text="🟢 Listo para cargar imágenes")
+            self.status_lbl.config(text="[ OK ] Listo para cargar imagenes")
 
     def refresh_preview(self):
-        """Actualiza el lienzo 1980x980 de la imagen seleccionada"""
+        """Actualiza el lienzo 1980x980 — con debounce de 60ms para fluidez."""
+        if self._render_after_id is not None:
+            self.after_cancel(self._render_after_id)
+        self._render_after_id = self.after(60, self._do_render_preview)
+
+    def _do_render_preview(self):
+        """Renderizado real del canvas (llamado por el debounce)."""
+        self._render_after_id = None
         count = len(self.images_list)
         if count == 0 or self.selected_index >= count:
             self.canvas_view.render_preview(None, 0, 0)
@@ -147,7 +190,7 @@ class MainWindow(tk.Tk):
             self.images_list.insert(to_idx, item)
             self.selected_index = to_idx
             self.refresh_all()
-            self.toast.show(f"Reordenado: '{item.filename}' ahora es la posición #{to_idx + 1:02d}", icon="🔄", duration_ms=2000)
+            self.toast.show(f"Reordenado: '{item.filename}' -> posicion #{to_idx + 1:02d}", icon="[->]", duration_ms=2000)
 
     def delete_item(self, idx):
         if 0 <= idx < len(self.images_list):
@@ -155,7 +198,7 @@ class MainWindow(tk.Tk):
             if self.selected_index >= len(self.images_list):
                 self.selected_index = max(0, len(self.images_list) - 1)
             self.refresh_all()
-            self.toast.show(f"Eliminada: '{removed.filename}'", icon="🗑️", duration_ms=2000)
+            self.toast.show(f"Eliminada: '{removed.filename}'", icon="[x]", duration_ms=2000)
 
     def clear_all(self):
         if not self.images_list:
@@ -164,7 +207,7 @@ class MainWindow(tk.Tk):
             self.images_list.clear()
             self.selected_index = 0
             self.refresh_all()
-            self.toast.show("Lista de imágenes vaciada", icon="🧹")
+            self.toast.show("Lista de imágenes vaciada", icon="[-]")
 
     def load_files_dialog(self):
         paths = filedialog.askopenfilenames(
@@ -194,7 +237,7 @@ class MainWindow(tk.Tk):
             if self.images_list:
                 self.selected_index = 0
                 self.refresh_all()
-                self.toast.show(f"¡Se cargaron {len(loaded_items)} imágenes exitosamente!", icon="✅", duration_ms=3500)
+                self.toast.show(f"Se cargaron {len(loaded_items)} imagenes exitosamente", icon="[OK]", duration_ms=3500)
         finally:
             prog.close()
 
@@ -235,16 +278,16 @@ class MainWindow(tk.Tk):
             )
 
             prog.close()
-            self.toast.show(f"¡Carpeta exportada con éxito! ({total} imágenes)", icon="🎉", duration_ms=4000)
+            self.toast.show(f"Carpeta exportada: {total} imagenes guardadas", icon="[OK]", duration_ms=4000)
 
             msg = (
-                f"✅ ¡Carpeta descomprimida exportada exitosamente!\n\n"
-                f"📁 Ubicación: {export_dir}\n"
-                f"🖼️ Total: {total} imágenes (01.png, 02.png... en lienzo 1980x980 px)\n"
-                f"⚖️ Peso garantizado: Máximo 1.5 MB por imagen\n\n"
-                f"¿Deseas abrir la carpeta ahora en el Explorador de Windows?"
+                f"[OK] Carpeta exportada exitosamente\n\n"
+                f"Ubicacion: {export_dir}\n"
+                f"Total: {total} imagenes (01.png, 02.png... en lienzo 1980x980 px)\n"
+                f"Peso: Maximo 1.5 MB por imagen\n\n"
+                f"¿Deseas abrir la carpeta en el Explorador de Windows?"
             )
-            if messagebox.askyesno("Exportación Exitosa", msg):
+            if messagebox.askyesno("Exportacion Exitosa", msg):
                 if sys.platform == "win32":
                     os.startfile(export_dir)
                 else:
@@ -257,7 +300,7 @@ class MainWindow(tk.Tk):
     def export_zip_action(self):
         """Exporta directamente como un archivo .ZIP comprimido con barra de progreso en vivo"""
         if not self.images_list:
-            messagebox.showwarning("Sin imágenes", "No hay imágenes cargadas para exportar.")
+            messagebox.showwarning("Sin imagenes", "No hay imagenes cargadas para exportar.")
             return
 
         default_zip = f"{self.current_archive_name or 'Imagenes_Organizadas'}.zip"
@@ -288,13 +331,13 @@ class MainWindow(tk.Tk):
             )
 
             prog.close()
-            self.toast.show(f"¡Archivo ZIP generado exitosamente! ({total} imágenes)", icon="📦", duration_ms=4000)
+            self.toast.show(f"ZIP generado: {total} imagenes", icon="[ZIP]", duration_ms=4000)
 
             messagebox.showinfo(
-                "Exportación Exitosa",
-                f"✅ ¡Archivo ZIP generado exitosamente!\n\n"
-                f"📦 Archivo: {zip_path}\n"
-                f"🖼️ Total: {total} imágenes (peso máx: 1.5 MB cada una)"
+                "Exportacion Exitosa",
+                f"[OK] Archivo ZIP generado exitosamente\n\n"
+                f"Archivo: {zip_path}\n"
+                f"Total: {total} imagenes (peso max: 1.5 MB cada una)"
             )
         except Exception as e:
             prog.close()

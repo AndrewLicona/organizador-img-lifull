@@ -24,7 +24,7 @@ class CanvasView(ttk.Frame):
         cp_controls = tk.Frame(self, bg=THEME["bg_main"], padx=20, pady=10)
         cp_controls.pack(fill=tk.X)
 
-        self.info_lbl = tk.Label(cp_controls, text="Visualizando: Ninguna imagen seleccionada", font=("Segoe UI", 11, "bold"), fg=THEME["accent"], bg=THEME["bg_main"])
+        self.info_lbl = tk.Label(cp_controls, text="Vista Previa: Ninguna imagen seleccionada", font=("Segoe UI", 11, "bold"), fg=THEME["accent"], bg=THEME["bg_main"])
         self.info_lbl.pack(side=tk.LEFT)
 
         margin_box = tk.Frame(cp_controls, bg=THEME["bg_main"])
@@ -63,7 +63,7 @@ class CanvasView(ttk.Frame):
     def render_preview(self, current_item, current_index, total_count):
         """Genera y escala el lienzo 1980x980 px según el espacio disponible en pantalla"""
         if current_item is None or total_count == 0:
-            self.info_lbl.config(text="Visualizando: Ninguna imagen seleccionada")
+            self.info_lbl.config(text="Vista Previa: Ninguna imagen seleccionada")
             self.nav_status.config(text="0 / 0")
             blank = Image.new("RGB", (600, 300), (30, 30, 46))
             tk_img = ImageTk.PhotoImage(blank)
@@ -71,7 +71,7 @@ class CanvasView(ttk.Frame):
             self._current_tk_img = tk_img
             return
 
-        self.info_lbl.config(text=f"Visualizando: #{current_index + 1:02d} - {current_item.filename}  [Lienzo 1980x980 px | Fondo Blanco]")
+        self.info_lbl.config(text=f"Vista Previa: #{current_index + 1:02d} - {current_item.filename}  [1980x980 px]")
         self.nav_status.config(text=f"Imagen {current_index + 1} de {total_count}")
 
         # Renderizar lienzo completo de 1980x980 px

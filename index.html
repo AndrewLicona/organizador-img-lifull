@@ -1,1117 +1,292 @@
 <!DOCTYPE html>
-<!-- v2.1 — Descarga con carpeta nombrada via File System Access API -->
+<!-- v4.0 — Estructura separada: CSS/JS externos · Carpetas preservadas · Flechas de teclado -->
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Organizador de Imágenes - Canvas Individual 1980x980</title>
-    <!-- JSZip para compresión y descompresión -->
+    <title>Organizador de Imágenes · Canvas 1980×980</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236366f1' stroke-width='1.8'%3E%3Crect x='3' y='3' width='18' height='18' rx='3' fill='%23eef2ff'/%3E%3Ccircle cx='8.5' cy='8.5' r='1.8' fill='%236366f1' stroke='none'/%3E%3Cpolyline points='21 15 16 10 5 21' stroke='%236366f1' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+    <link rel="stylesheet" href="assets/styles.css">
+    <!-- JSZip + SortableJS -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <!-- SortableJS para Drag & Drop ultra fluido -->
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
-    <style>
-        :root {
-            --bg-main:        #0f0f17;
-            --bg-panel:       #161622;
-            --bg-card:        #1e1e2e;
-            --bg-card-hover:  #25273a;
-            --bg-card-active: #2b2e4a;
-            --bg-header:      #11111b;
-            --accent:         #89b4fa;
-            --accent-hover:   #b4befe;
-            --success:        #a6e3a1;
-            --warning:        #fab387;
-            --danger:         #f38ba8;
-            --text:           #cdd6f4;
-            --text-muted:     #9399b2;
-            --border:         #282a3e;
-            --drop-line:      #fab387;
-        }
-
-        *, *::before, *::after {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-        }
-
-        body {
-            background: var(--bg-main);
-            color: var(--text);
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
-
-        /* ─── HEADER ─── */
-        header {
-            background: var(--bg-header);
-            padding: 11px 22px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid var(--border);
-            flex-shrink: 0;
-            gap: 12px;
-        }
-
-        .brand h1 { font-size: 1.15rem; color: var(--accent); display: flex; align-items: center; gap: 9px; }
-        .brand p  { font-size: 0.78rem; color: var(--text-muted); margin-top: 2px; }
-
-        .header-actions { display: flex; gap: 7px; flex-wrap: nowrap; }
-
-        button, .btn-file {
-            background: var(--accent);
-            color: #0f0f17;
-            border: none;
-            padding: 8px 14px;
-            border-radius: 7px;
-            font-weight: 700;
-            font-size: 0.83rem;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-            transition: background 0.18s ease, transform 0.1s ease;
-            text-decoration: none;
-            white-space: nowrap;
-        }
-        button:hover, .btn-file:hover { background: var(--accent-hover); transform: translateY(-1px); }
-        button:active, .btn-file:active { transform: translateY(0); }
-
-        .btn-success { background: var(--success); }
-        .btn-success:hover { background: #c3f0bd; }
-
-        .btn-warning { background: var(--warning); color: #0f0f17; }
-        .btn-warning:hover { background: #fcd0af; }
-
-        .btn-secondary { background: var(--border); color: var(--text); }
-        .btn-secondary:hover { background: #373a55; }
-
-        .btn-danger { background: var(--danger); color: #0f0f17; padding: 4px 8px; font-size: 0.78rem; }
-        .btn-danger:hover { background: #f7aabe; }
-
-        /* ─── LAYOUT ─── */
-        .app-layout {
-            display: flex;
-            flex: 1;
-            overflow: hidden;
-        }
-
-        /* ─── SIDEBAR ─── */
-        .sidebar {
-            width: 420px;
-            min-width: 320px;
-            background: var(--bg-panel);
-            border-right: 1px solid var(--border);
-            display: flex;
-            flex-direction: column;
-            flex-shrink: 0;
-        }
-
-        .sidebar-header {
-            padding: 12px 16px;
-            border-bottom: 1px solid var(--border);
-            background: var(--bg-main);
-            flex-shrink: 0;
-        }
-
-        .sidebar-header h2 {
-            font-size: 1rem;
-            color: var(--text);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .sidebar-header .hint {
-            font-size: 0.77rem;
-            color: var(--text-muted);
-            margin-top: 4px;
-        }
-
-        .sidebar-header .count {
-            font-size: 0.82rem;
-            color: var(--accent);
-            margin-top: 2px;
-        }
-
-        /* La lista SortableJS — NO se destruye durante drag */
-        .list-items {
-            flex: 1;
-            overflow-y: auto;
-            overflow-x: hidden;
-            padding: 8px;
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-            scrollbar-width: thin;
-            scrollbar-color: var(--border) var(--bg-main);
-        }
-
-        /* ─── TARJETAS ─── */
-        .item-card {
-            background: var(--bg-card);
-            border: 1.5px solid var(--border);
-            border-radius: 8px;
-            padding: 8px 10px;
-            display: flex;
-            align-items: center;
-            gap: 9px;
-            cursor: default;
-            /* 
-              CLAVE: solo transition de colores/sombras, NUNCA de transform durante drag
-              (transform interfiere con el cálculo de posición de SortableJS)
-            */
-            transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
-            will-change: transform;
-        }
-
-        .item-card:hover:not(.sortable-chosen):not(.sortable-ghost) {
-            border-color: var(--accent);
-            background: var(--bg-card-hover);
-        }
-
-        .item-card.active {
-            background: var(--bg-card-active);
-            border-color: var(--accent);
-            box-shadow: 0 0 12px rgba(137,180,250,0.25);
-        }
-
-        /* Estado fantasma (la tarjeta original durante el drag) */
-        .item-card.sortable-ghost {
-            opacity: 0.2;
-            background: var(--border) !important;
-            border: 2px dashed var(--drop-line) !important;
-            box-shadow: none !important;
-            transform: none !important;
-        }
-
-        /* La tarjeta que el usuario está arrastrando (clone real) */
-        .item-card.sortable-chosen {
-            cursor: grabbing !important;
-            box-shadow: 0 10px 28px rgba(0,0,0,0.65);
-            border-color: var(--drop-line) !important;
-            background: var(--bg-card-active) !important;
-            transform: rotate(0.8deg) scale(1.02);
-        }
-
-        /* Fallback clone de arrastre */
-        .item-card.sortable-drag {
-            opacity: 1 !important;
-            box-shadow: 0 14px 36px rgba(0,0,0,0.7);
-        }
-
-        .drag-handle {
-            font-size: 1.15rem;
-            color: var(--text-muted);
-            cursor: grab;
-            padding: 3px 5px;
-            border-radius: 4px;
-            transition: color 0.15s;
-            flex-shrink: 0;
-        }
-        .drag-handle:hover { color: var(--accent); }
-        .item-card.active .drag-handle { color: var(--accent); }
-
-        .pos-badge {
-            background: var(--accent);
-            color: #0f0f17;
-            font-weight: 800;
-            font-size: 0.8rem;
-            padding: 3px 7px;
-            border-radius: 5px;
-            min-width: 38px;
-            text-align: center;
-            flex-shrink: 0;
-            transition: background 0.15s;
-        }
-        .item-card.active .pos-badge { background: var(--success); }
-
-        .item-thumb {
-            width: 62px;
-            height: 46px;
-            background: var(--bg-header);
-            border-radius: 4px;
-            overflow: hidden;
-            flex-shrink: 0;
-            border: 1px solid var(--border);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .item-thumb img {
-            max-width: 100%;
-            max-height: 100%;
-            object-fit: contain;
-            pointer-events: none;
-            display: block;
-        }
-
-        .item-details { flex: 1; min-width: 0; }
-        .item-name {
-            font-size: 0.82rem;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            color: var(--text);
-            font-weight: 500;
-            pointer-events: none;
-        }
-
-        .item-btns {
-            display: flex;
-            gap: 3px;
-            flex-shrink: 0;
-        }
-        .btn-mini {
-            background: var(--border);
-            color: var(--text);
-            border: none;
-            padding: 4px 7px;
-            border-radius: 4px;
-            font-size: 0.73rem;
-            cursor: pointer;
-            transition: background 0.12s;
-        }
-        .btn-mini:hover { background: #3a3d5a; }
-
-        /* ─── CANVAS AREA ─── */
-        .canvas-area {
-            flex: 1;
-            background: var(--bg-card);
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
-
-        .canvas-toolbar {
-            padding: 10px 22px;
-            background: var(--bg-main);
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-shrink: 0;
-        }
-
-        .canvas-info {
-            font-size: 0.92rem;
-            font-weight: 700;
-            color: var(--accent);
-        }
-
-        .canvas-controls {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            font-size: 0.82rem;
-            color: var(--text-muted);
-        }
-        .canvas-controls input[type="number"] {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            color: var(--text);
-            padding: 5px 8px;
-            border-radius: 5px;
-            width: 65px;
-            font-size: 0.82rem;
-        }
-        .canvas-controls input[type="number"]:focus {
-            outline: none;
-            border-color: var(--accent);
-        }
-
-        .canvas-viewport {
-            flex: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 22px;
-            overflow: hidden;
-        }
-
-        #mainCanvas {
-            max-width: 100%;
-            max-height: 100%;
-            background: #ffffff;
-            box-shadow: 0 4px 40px rgba(0,0,0,0.8);
-            border-radius: 3px;
-        }
-
-        .empty-placeholder {
-            text-align: center;
-            color: var(--text-muted);
-        }
-        .empty-placeholder h3 { color: var(--accent); margin-bottom: 8px; font-size: 1.1rem; }
-
-        .canvas-footer {
-            padding: 9px 22px;
-            background: var(--bg-main);
-            border-top: 1px solid var(--border);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-shrink: 0;
-        }
-
-        /* ─── STATUS BAR ─── */
-        .status-bar {
-            height: 28px;
-            background: var(--bg-header);
-            border-top: 1px solid var(--border);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0 18px;
-            font-size: 0.77rem;
-            color: var(--text-muted);
-            flex-shrink: 0;
-        }
-
-        /* ─── MODAL PROGRESO ─── */
-        .progress-modal {
-            position: fixed;
-            inset: 0;
-            background: rgba(8, 8, 14, 0.82);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 10000;
-            backdrop-filter: blur(5px);
-        }
-        .progress-box {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 14px;
-            padding: 28px 34px;
-            width: 480px;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.7);
-            display: flex;
-            flex-direction: column;
-            gap: 14px;
-        }
-        .progress-title { font-size: 1.08rem; font-weight: 700; color: var(--accent); }
-        .progress-sub   { font-size: 0.83rem; color: var(--text-muted); }
-        .progress-track {
-            width: 100%; height: 10px;
-            background: var(--bg-main);
-            border-radius: 5px;
-            overflow: hidden;
-            border: 1px solid var(--border);
-        }
-        .progress-fill {
-            height: 100%;
-            width: 0%;
-            background: linear-gradient(90deg, var(--accent), var(--success));
-            border-radius: 5px;
-            transition: width 0.18s ease;
-        }
-        .progress-status {
-            font-size: 0.82rem;
-            color: var(--text);
-            display: flex;
-            justify-content: space-between;
-        }
-
-        /* ─── TOAST ─── */
-        .toast {
-            position: fixed;
-            bottom: 44px;
-            right: 22px;
-            background: var(--bg-card-active);
-            border: 1.5px solid var(--success);
-            color: var(--text);
-            padding: 11px 18px;
-            border-radius: 9px;
-            box-shadow: 0 8px 30px rgba(0,0,0,0.5);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 0.88rem;
-            font-weight: 600;
-            z-index: 9999;
-            transform: translateY(80px);
-            opacity: 0;
-            transition: transform 0.28s cubic-bezier(0.34,1.56,0.64,1), opacity 0.25s ease;
-            pointer-events: none;
-            max-width: 420px;
-        }
-        .toast.show { transform: translateY(0); opacity: 1; }
-
-        /* ─── MISC ─── */
-        input[type="file"] { display: none; }
-
-        .sidebar-drop-zone {
-            margin: 6px 10px;
-            padding: 10px;
-            border: 2px dashed var(--accent);
-            border-radius: 7px;
-            text-align: center;
-            font-size: 0.8rem;
-            color: var(--accent);
-            background: rgba(137,180,250,0.07);
-            display: none;
-            flex-shrink: 0;
-        }
-
-        .no-items-msg {
-            text-align: center;
-            padding: 48px 16px;
-            color: var(--text-muted);
-        }
-        .no-items-msg p { margin-top: 8px; font-size: 0.85rem; line-height: 1.5; }
-    </style>
 </head>
 <body>
 
-    <!-- Modal de Progreso -->
-    <div id="progressModal" class="progress-modal">
-        <div class="progress-box">
-            <div id="progTitle" class="progress-title">Procesando...</div>
-            <div id="progSub"   class="progress-sub">Por favor espera</div>
-            <div class="progress-track">
-                <div id="progFill" class="progress-fill"></div>
-            </div>
-            <div class="progress-status">
-                <span id="progText">Iniciando...</span>
-                <span id="progPercent">0%</span>
-            </div>
+<!-- ════ MODAL: NOMBRE DE CARPETA / ZIP ════ -->
+<div id="nameDialog" class="overlay" role="dialog" aria-modal="true" aria-labelledby="dlgTitle">
+    <div class="dialog-box">
+        <div class="dialog-box__header">
+            <svg class="icon icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/>
+            </svg>
+            <span class="dialog-box__title" id="dlgTitle">Guardar imágenes</span>
+        </div>
+        <p class="dialog-box__sub" id="dlgDesc">Elige el nombre para la carpeta. Se creará automáticamente en la ubicación que elijas (Escritorio, Descargas o Documentos).</p>
+        <div class="dialog-field">
+            <label for="dlgInput">
+                <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+                    <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                </svg>
+                Nombre de la carpeta
+            </label>
+            <input type="text" id="dlgInput" placeholder="Imagenes_Organizadas" autocomplete="off"/>
+        </div>
+        <div id="dlgTip" style="font-size:0.75rem;color:var(--text-muted);background:var(--bg-main);padding:8px 10px;border-radius:6px;border:1px solid var(--border);line-height:1.4;">
+            <span style="color:var(--success);font-weight:700;">Listo:</span> Al pulsar Confirmar, selecciona tu <strong>Escritorio</strong>, <strong>Descargas</strong> o <strong>Documentos</strong>. La carpeta se creará allí automáticamente sin que tengas que crearla manualmente.
+        </div>
+        <div class="dialog-actions">
+            <button class="btn-secondary" onclick="closeDlg()">
+                <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+                Cancelar
+            </button>
+            <button id="dlgConfirmBtn" class="btn-success">
+                <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M5 13l4 4L19 7"/>
+                </svg>
+                Confirmar
+            </button>
         </div>
     </div>
+</div>
 
-    <!-- Toast -->
-    <div id="toast" class="toast">
-        <span id="toastIcon">✅</span>
-        <span id="toastMsg">Mensaje</span>
+<!-- ════ MODAL: PROGRESO ════ -->
+<div id="progressModal" class="progress-modal" role="status" aria-live="polite">
+    <div class="progress-box">
+        <div id="progTitle" class="progress-title">Procesando...</div>
+        <div id="progSub"   class="progress-sub">Por favor espera</div>
+        <div class="progress-track">
+            <div id="progFill" class="progress-fill"></div>
+        </div>
+        <div class="progress-status">
+            <span id="progText">Iniciando...</span>
+            <span id="progPercent">0%</span>
+        </div>
+    </div>
+</div>
+
+<!-- ════ TOAST ════ -->
+<div id="toast" class="toast" role="alert">
+    <svg id="toastIcon" class="icon" viewBox="0 0 24 24"></svg>
+    <span id="toastMsg">Mensaje</span>
+</div>
+
+<!-- ════ HEADER ════ -->
+<header class="app-header">
+    <div class="brand">
+        <h1 class="brand__title">
+            <svg class="icon icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                <circle cx="8.5" cy="8.5" r="1.5"/>
+                <polyline points="21 15 16 10 5 21"/>
+            </svg>
+            Organizador de Imágenes
+        </h1>
+        <p class="brand__sub">Lienzo Individual 1980 × 980 px &nbsp;·&nbsp; Fondo Blanco &nbsp;·&nbsp; Peso máx. 1.5 MB</p>
     </div>
 
-    <header>
-        <div class="brand">
-            <h1>🖼️ Organizador de Imágenes</h1>
-            <p>Lienzo Individual 1980 × 980 px | Fondo Blanco | Peso máx. 1.5 MB</p>
-        </div>
-        <div class="header-actions">
-            <label for="fileInput" class="btn-file">📂 Cargar ZIP / Fotos</label>
-            <input type="file" id="fileInput" accept=".zip,image/*" multiple>
-            <button class="btn-success" onclick="saveToFolder()">📁 Guardar en Carpeta</button>
-            <button class="btn-warning" onclick="exportZip()">📦 Exportar ZIP</button>
-            <button class="btn-secondary" onclick="toggleFS()" title="Pantalla completa">⛶ Pantalla Completa</button>
-        </div>
-    </header>
+    <div class="header-actions">
+        <label for="fileInput" class="btn-file">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+            </svg>
+            Cargar ZIP / Fotos
+        </label>
+        <input type="file" id="fileInput" accept=".zip,image/*" multiple>
 
-    <div class="app-layout">
+        <button class="btn-success" onclick="openSaveFolderDlg()">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/>
+            </svg>
+            Guardar en Carpeta
+        </button>
 
-        <!-- SIDEBAR -->
-        <aside class="sidebar">
-            <div class="sidebar-header">
-                <h2>
-                    <span>📋 Lista de Imágenes</span>
-                    <button class="btn-danger" onclick="clearList()">🗑️ Vaciar</button>
-                </h2>
-                <div class="count" id="imgCount">0 imágenes cargadas</div>
-                <div class="hint">💡 Arrastra ☰ para reordenar · naranja = destino de inserción</div>
-            </div>
-            <div class="sidebar-drop-zone" id="dropZone">📂 Suelta archivos aquí</div>
-            <!-- 
-                CLAVE: este div es el contenedor de SortableJS.
-                NUNCA se hace innerHTML='' durante un drag activo.
-                Los nodos se actualizan con patch DOM individual.
-            -->
-            <div id="sortableList" class="list-items"></div>
-        </aside>
+        <button class="btn-warning" onclick="openExportZipDlg()">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+                <polyline points="12 15 12 21"/>
+            </svg>
+            Exportar ZIP
+        </button>
 
-        <!-- CANVAS AREA -->
-        <main class="canvas-area">
-            <div class="canvas-toolbar">
-                <div id="canvasTitle" class="canvas-info">Ninguna imagen seleccionada</div>
-                <div class="canvas-controls">
-                    <label>Márgenes Canvas (px):</label>
-                    <input type="number" id="marginInput" value="50" min="0" max="400"
-                           oninput="renderCanvas()">
-                    <span>Lienzo: 1980 × 980 px</span>
-                </div>
-            </div>
-
-            <div class="canvas-viewport" id="viewport">
-                <div id="placeholder" class="empty-placeholder">
-                    <h3>📁 No hay imágenes cargadas</h3>
-                    <p>Haz clic en "Cargar ZIP / Fotos" o arrastra archivos<br>desde tu explorador de Windows.</p>
-                </div>
-                <canvas id="mainCanvas" width="1980" height="980" style="display:none;"></canvas>
-            </div>
-
-            <div class="canvas-footer">
-                <button class="btn-secondary" onclick="prevImg()">◀ Anterior</button>
-                <span id="navCounter" style="font-weight:600; color:var(--text-muted);">0 / 0</span>
-                <button class="btn-secondary" onclick="nextImg()">Siguiente ▶</button>
-            </div>
-        </main>
+        <button class="btn-secondary" onclick="toggleFS()" title="Pantalla completa (F11)">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                <path d="M8 3H5a2 2 0 00-2 2v3M21 8V5a2 2 0 00-2-2h-3M16 21h3a2 2 0 002-2v-3M3 16v3a2 2 0 002 2h3"/>
+            </svg>
+            Pantalla Completa
+        </button>
     </div>
+</header>
 
-    <footer class="status-bar">
-        <span id="statusText">🟢 Listo para cargar imágenes</span>
-        <span>📐 Lienzo: 1980 × 980 px | Fondo Blanco | ⚖️ Peso máx: 1.5 MB por foto</span>
-    </footer>
+<!-- ════ LAYOUT ════ -->
+<div class="app-layout">
 
-<script>
-// ════════════════════════════════════════════════════════════
-// ESTADO GLOBAL
-// ════════════════════════════════════════════════════════════
-const CANVAS_W   = 1980;
-const CANVAS_H   = 980;
-const MAX_BYTES  = 1.5 * 1024 * 1024;
-
-let images       = [];   // { id, name, blob, dataUrl, imgObj }
-let selIdx       = 0;
-let zipBase      = 'Imagenes_Organizadas';
-let sortableInst = null;
-let isDragging   = false; // true mientras SortableJS tiene control
-let toastTimer   = null;
-
-// ════════════════════════════════════════════════════════════
-// DOM REFS
-// ════════════════════════════════════════════════════════════
-const sortableList = document.getElementById('sortableList');
-const mainCanvas   = document.getElementById('mainCanvas');
-const placeholder  = document.getElementById('placeholder');
-const canvasTitle  = document.getElementById('canvasTitle');
-const navCounter   = document.getElementById('navCounter');
-const marginInput  = document.getElementById('marginInput');
-const fileInput    = document.getElementById('fileInput');
-const dropZone     = document.getElementById('dropZone');
-const statusText   = document.getElementById('statusText');
-const imgCount     = document.getElementById('imgCount');
-
-// ════════════════════════════════════════════════════════════
-// SORTABLEJS — inicializado UNA sola vez, el nodo NUNCA desaparece
-// ════════════════════════════════════════════════════════════
-sortableInst = new Sortable(sortableList, {
-    animation: 180,
-    easing: 'cubic-bezier(0.25, 1, 0.5, 1)',
-    ghostClass:   'sortable-ghost',
-    chosenClass:  'sortable-chosen',
-    dragClass:    'sortable-drag',
-    handle:       '.drag-handle',
-    // forceFallback: false  →  usa HTML5 nativo (más suave en escritorio)
-    forceFallback: false,
-    delay: 0,
-    delayOnTouchOnly: true,
-
-    onStart() {
-        isDragging = true;
-    },
-
-    onEnd(evt) {
-        isDragging = false;
-        if (evt.oldIndex === evt.newIndex) return;
-
-        // Reordenar el array de datos
-        const item = images.splice(evt.oldIndex, 1)[0];
-        images.splice(evt.newIndex, 0, item);
-        selIdx = evt.newIndex;
-
-        // Actualizar SOLO las badges de posición (parche mínimo, sin destruir nodos)
-        patchBadges();
-        updateActiveClass();
-        renderCanvas();
-        updateStatus();
-        showToast(`Reordenado: "${item.name}" → #${pad(evt.newIndex + 1)}`, '🔄');
-    }
-});
-
-// ════════════════════════════════════════════════════════════
-// PATCH DOM — actualizar solo lo que cambió, sin destruir nodos
-// ════════════════════════════════════════════════════════════
-
-/**
- * Reconstrucción completa del DOM de la lista.
- * Se llama SOLO en: carga de archivos, borrado, vaciar.
- * NO se llama durante drag ni reorder de SortableJS.
- */
-function rebuildList() {
-    if (images.length === 0) {
-        sortableList.innerHTML = `
-            <div class="no-items-msg">
-                📁 <strong>Ninguna imagen cargada</strong>
-                <p>Haz clic en "Cargar ZIP / Fotos"<br>o arrastra archivos al panel.</p>
-            </div>`;
-        placeholder.style.display = 'block';
-        mainCanvas.style.display  = 'none';
-        canvasTitle.textContent   = 'Ninguna imagen seleccionada';
-        navCounter.textContent    = '0 / 0';
-        imgCount.textContent      = '0 imágenes cargadas';
-        statusText.textContent    = '🟢 Listo para cargar imágenes';
-        return;
-    }
-
-    sortableList.innerHTML = '';
-    placeholder.style.display = 'none';
-    mainCanvas.style.display  = 'block';
-
-    images.forEach((item, idx) => {
-        sortableList.appendChild(createCard(item, idx));
-    });
-
-    patchBadges();
-    updateActiveClass();
-    updateStatus();
-    imgCount.textContent = `${images.length} imágenes cargadas`;
-}
-
-/** Crea un nodo tarjeta para una imagen */
-function createCard(item, idx) {
-    const card = document.createElement('div');
-    card.className = 'item-card';
-    card.dataset.id = item.id;
-
-    // Clic en la tarjeta → seleccionar (no interferir con drag ni botones)
-    card.addEventListener('click', (e) => {
-        if (isDragging) return;
-        if (e.target.closest('.item-btns')) return;
-        const i = images.findIndex(x => x.id === item.id);
-        if (i >= 0) selectItem(i);
-    });
-
-    card.innerHTML = `
-        <span class="drag-handle" title="Arrastra para reordenar">☰</span>
-        <span class="pos-badge">#${pad(idx + 1)}</span>
-        <div class="item-thumb">
-            <img src="${item.dataUrl}" alt="${item.name}" loading="lazy">
+    <!-- ── SIDEBAR ── -->
+    <aside class="sidebar" aria-label="Lista de imágenes">
+        <div class="sidebar__header">
+            <div class="sidebar__header-top">
+                <span class="sidebar__title">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                        <line x1="8" y1="6" x2="21" y2="6"/>
+                        <line x1="8" y1="12" x2="21" y2="12"/>
+                        <line x1="8" y1="18" x2="21" y2="18"/>
+                        <line x1="3" y1="6" x2="3.01" y2="6"/>
+                        <line x1="3" y1="12" x2="3.01" y2="12"/>
+                        <line x1="3" y1="18" x2="3.01" y2="18"/>
+                    </svg>
+                    Lista de Imágenes
+                </span>
+                <button class="btn-danger" onclick="clearList()">
+                    <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                        <polyline points="3 6 5 6 21 6"/>
+                        <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6M10 11v6M14 11v6M9 6V4h6v2"/>
+                    </svg>
+                    Vaciar
+                </button>
+            </div>
+            <div class="sidebar__count" id="imgCount">0 imágenes</div>
+            <div class="sidebar__hint">
+                <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="12" y1="8" x2="12" y2="12" stroke-linecap="round"/>
+                    <line x1="12" y1="16" x2="12.01" y2="16" stroke-linecap="round"/>
+                </svg>
+                Arrastra para reordenar &nbsp;·&nbsp; ZIP con subcarpetas se agrupa
+            </div>
         </div>
-        <div class="item-details">
-            <div class="item-name" title="${item.name}">${item.name}</div>
+
+        <div class="sidebar-drop-zone" id="dropZone">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+            </svg>
+            Suelta archivos aquí
         </div>
-        <div class="item-btns">
-            ${idx > 0
-                ? `<button class="btn-mini" title="Subir" onclick="moveItem('${item.id}',-1,event)">▲</button>`
-                : ''}
-            ${idx < images.length - 1
-                ? `<button class="btn-mini" title="Bajar" onclick="moveItem('${item.id}',+1,event)">▼</button>`
-                : ''}
-            <button class="btn-danger" onclick="deleteItem('${item.id}',event)">✖</button>
+
+        <div id="sortableList" class="sidebar__list"></div>
+    </aside>
+
+    <!-- ── CANVAS AREA ── -->
+    <main class="canvas-area" aria-label="Vista previa del lienzo">
+        <div class="canvas-toolbar">
+            <div id="canvasTitle" class="canvas-info">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                    <rect x="3" y="3" width="18" height="18" rx="2"/>
+                    <circle cx="8.5" cy="8.5" r="1.5"/>
+                    <polyline points="21 15 16 10 5 21"/>
+                </svg>
+                Ninguna imagen seleccionada
+            </div>
+            <div class="canvas-controls">
+                <button class="btn-mini" id="btnUndo" onclick="undo()" title="Deshacer (Ctrl+Z)">
+                    <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
+                    </svg>
+                    Deshacer
+                </button>
+                <button class="btn-mini" id="btnRedo" onclick="redo()" title="Rehacer (Ctrl+Y)">
+                    <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+                    </svg>
+                    Rehacer
+                </button>
+
+                <div class="divider-v"></div>
+
+                <label for="fitModeSelect" title="Modo de ajuste de la imagen">
+                    Ajuste:
+                </label>
+                <select id="fitModeSelect" class="select-ctrl" onchange="changeFitMode(this.value)">
+                    <option value="contain">Contener</option>
+                    <option value="cover">Llenar</option>
+                </select>
+
+                <label for="zoomRange" title="Zoom individual">
+                    Zoom:
+                </label>
+                <input type="range" id="zoomRange" min="50" max="250" value="100" class="range-ctrl" oninput="changeZoom(this.value)">
+                <span id="zoomVal" style="min-width:34px;text-align:right;">100%</span>
+
+                <button class="btn-mini" onclick="rotateImg(90)" title="Rotar 90°">
+                    <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+                    </svg>
+                    90°
+                </button>
+
+                <button class="btn-mini" onclick="resetAdjustments()" title="Restablecer posición y zoom">
+                    Restablecer
+                </button>
+
+                <div class="divider-v"></div>
+
+                <label for="marginInput">
+                    <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+                        <rect x="3" y="3" width="18" height="18" rx="2"/>
+                        <line x1="9" y1="3" x2="9" y2="21"/>
+                        <line x1="15" y1="3" x2="15" y2="21"/>
+                        <line x1="3" y1="9" x2="21" y2="9"/>
+                        <line x1="3" y1="15" x2="21" y2="15"/>
+                    </svg>
+                    Márgenes:
+                </label>
+                <input type="number" id="marginInput" value="50" min="0" max="400" oninput="changeGlobalMargin(this.value)">
+            </div>
         </div>
-    `;
-    return card;
-}
 
-/** Actualiza solo los badges #01, #02... sin tocar el resto del DOM */
-function patchBadges() {
-    const cards = sortableList.querySelectorAll('.item-card');
-    cards.forEach((card, i) => {
-        const badge = card.querySelector('.pos-badge');
-        if (badge) badge.textContent = '#' + pad(i + 1);
-    });
-    imgCount.textContent = `${images.length} imágenes cargadas`;
-}
+        <div class="canvas-viewport" id="viewport">
+            <div id="placeholder" class="empty-state">
+                <svg class="empty-state__icon" style="width:52px;height:52px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+                    <rect x="3" y="3" width="18" height="18" rx="2"/>
+                    <circle cx="8.5" cy="8.5" r="1.5"/>
+                    <polyline points="21 15 16 10 5 21"/>
+                </svg>
+                <h3>Sin imágenes cargadas</h3>
+                <p>Haz clic en <strong>Cargar ZIP / Fotos</strong> o arrastra<br>archivos desde tu explorador.<br>
+                <small style="color:var(--text-muted);font-size:0.74rem;">Los ZIPs con subcarpetas se agrupan automáticamente.</small></p>
+            </div>
+            <canvas id="mainCanvas" width="1980" height="980" style="display:none;"></canvas>
+        </div>
 
-/** Actualiza solo la clase .active en las tarjetas */
-function updateActiveClass() {
-    const cards = sortableList.querySelectorAll('.item-card');
-    cards.forEach((card, i) => {
-        card.classList.toggle('active', i === selIdx);
-    });
-}
+        <div class="canvas-footer">
+            <button class="btn-secondary" onclick="prevImg()">
+                <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="15 18 9 12 15 6"/>
+                </svg>
+                Anterior
+            </button>
 
-// ════════════════════════════════════════════════════════════
-// SELECCIÓN Y NAVEGACIÓN
-// ════════════════════════════════════════════════════════════
+            <div style="display:flex;flex-direction:column;align-items:center;gap:2px;">
+                <span id="navCounter" style="font-weight:700;color:var(--text);font-size:0.9rem;">0 / 0</span>
+                <span class="nav-hint">
+                    <span class="kbd">←</span> <span class="kbd">→</span> navegar &nbsp;|&nbsp;
+                    <span class="kbd">↑</span> <span class="kbd">↓</span> reordenar &nbsp;|&nbsp;
+                    <span class="kbd">Ctrl+Z</span> deshacer &nbsp;|&nbsp;
+                    <span class="kbd">Supr</span> borrar &nbsp;|&nbsp;
+                    Arrastra la imagen en el lienzo para moverla
+                </span>
+            </div>
 
-function selectItem(idx) {
-    if (idx < 0 || idx >= images.length) return;
-    selIdx = idx;
-    updateActiveClass();
-    renderCanvas();
-    updateStatus();
-}
+            <button class="btn-secondary" onclick="nextImg()">
+                Siguiente
+                <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="9 18 15 12 9 6"/>
+                </svg>
+            </button>
+        </div>
+    </main>
+</div>
 
-function prevImg() { if (selIdx > 0)                       selectItem(selIdx - 1); }
-function nextImg() { if (selIdx < images.length - 1)       selectItem(selIdx + 1); }
+<!-- ════ STATUS BAR ════ -->
+<footer class="status-bar">
+    <span id="statusText" style="display:flex;align-items:center;gap:4px;">
+        <span class="status-dot"></span>Listo para cargar imágenes
+    </span>
+    <span>Lienzo: 1980 × 980 px &nbsp;|&nbsp; Fondo Blanco &nbsp;|&nbsp; Máx 1.5 MB</span>
+</footer>
 
-// ════════════════════════════════════════════════════════════
-// MOVER Y BORRAR
-// ════════════════════════════════════════════════════════════
-
-function moveItem(id, delta, event) {
-    if (event) event.stopPropagation();
-    const from = images.findIndex(x => x.id === id);
-    const to   = from + delta;
-    if (from < 0 || to < 0 || to >= images.length) return;
-
-    const item = images.splice(from, 1)[0];
-    images.splice(to, 0, item);
-    selIdx = to;
-
-    rebuildList();
-    renderCanvas();
-    showToast(`Movido: "${item.name}" → #${pad(to + 1)}`, '🔄');
-}
-
-function deleteItem(id, event) {
-    if (event) event.stopPropagation();
-    const idx = images.findIndex(x => x.id === id);
-    if (idx < 0) return;
-    const removed = images.splice(idx, 1)[0];
-    if (selIdx >= images.length) selIdx = Math.max(0, images.length - 1);
-    rebuildList();
-    renderCanvas();
-    showToast(`Eliminada: "${removed.name}"`, '🗑️');
-}
-
-function clearList() {
-    if (!images.length) return;
-    if (!confirm('¿Deseas vaciar todas las imágenes de la lista?')) return;
-    images = [];
-    selIdx = 0;
-    rebuildList();
-    renderCanvas();
-    showToast('Lista de imágenes vaciada', '🧹');
-}
-
-// ════════════════════════════════════════════════════════════
-// CARGA DE ARCHIVOS
-// ════════════════════════════════════════════════════════════
-
-fileInput.addEventListener('change', e => handleFiles(Array.from(e.target.files)));
-
-window.addEventListener('dragover', e => {
-    if (isDragging) return;
-    if (e.dataTransfer?.types?.includes('Files')) {
-        e.preventDefault();
-        e.dataTransfer.dropEffect = 'copy';
-        dropZone.style.display = 'block';
-    }
-});
-window.addEventListener('dragleave', e => {
-    if (isDragging) return;
-    if (e.clientX <= 0 || e.clientY <= 0 ||
-        e.clientX >= window.innerWidth || e.clientY >= window.innerHeight) {
-        dropZone.style.display = 'none';
-    }
-});
-window.addEventListener('drop', e => {
-    if (isDragging) return;
-    dropZone.style.display = 'none';
-    if (e.dataTransfer?.files?.length) {
-        e.preventDefault();
-        handleFiles(Array.from(e.dataTransfer.files));
-    }
-});
-
-async function handleFiles(files) {
-    showProgress('Cargando imágenes...', 'Extrayendo y generando miniaturas');
-    let loaded = 0;
-
-    try {
-        for (let i = 0; i < files.length; i++) {
-            const f = files[i];
-            updateProgress(i + 1, files.length, `Leyendo ${f.name}...`);
-
-            if (f.name.toLowerCase().endsWith('.zip')) {
-                zipBase = f.name.replace(/\.zip$/i, '');
-                await processZip(f);
-            } else if (f.type.startsWith('image/')) {
-                await addImage(f, f.name);
-                loaded++;
-            }
-            await tick(8);
-        }
-    } finally {
-        hideProgress();
-    }
-
-    if (images.length > 0) {
-        selIdx = 0;
-        rebuildList();
-        renderCanvas();
-        showToast(`¡${images.length} imágenes cargadas exitosamente!`, '✅');
-    }
-}
-
-async function processZip(file) {
-    try {
-        const zip     = await JSZip.loadAsync(file);
-        const entries = Object.keys(zip.files).sort();
-
-        for (let i = 0; i < entries.length; i++) {
-            const key   = entries[i];
-            const entry = zip.files[key];
-            if (entry.dir) continue;
-            if (!key.toLowerCase().match(/\.(png|jpe?g|webp|bmp|gif)$/)) continue;
-
-            updateProgress(i + 1, entries.length, `Extrayendo ${key.split('/').pop()}...`);
-            const blob = await entry.async('blob');
-            await addImage(blob, key.split('/').pop());
-        }
-    } catch (err) {
-        showToast('Error descomprimiendo ZIP: ' + err.message, '❌', true);
-    }
-}
-
-function addImage(blob, name) {
-    return new Promise(resolve => {
-        const reader = new FileReader();
-        reader.onload = e => {
-            const dataUrl = e.target.result;
-            const img     = new Image();
-            img.onload = () => {
-                images.push({
-                    id:      'i' + Math.random().toString(36).slice(2, 11),
-                    name,
-                    blob,
-                    dataUrl,
-                    imgObj: img
-                });
-                resolve();
-            };
-            img.src = dataUrl;
-        };
-        reader.readAsDataURL(blob);
-    });
-}
-
-// ════════════════════════════════════════════════════════════
-// CANVAS
-// ════════════════════════════════════════════════════════════
-
-function drawOnCanvas(targetCanvas, item) {
-    const ctx    = targetCanvas.getContext('2d');
-    const margin = Math.max(0, parseInt(marginInput.value) || 50);
-
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
-
-    if (!item?.imgObj) return;
-
-    const availW = CANVAS_W - 2 * margin;
-    const availH = CANVAS_H - 2 * margin;
-    const scale  = Math.min(availW / item.imgObj.width, availH / item.imgObj.height);
-    const w      = item.imgObj.width  * scale;
-    const h      = item.imgObj.height * scale;
-    const x      = (CANVAS_W - w) / 2;
-    const y      = (CANVAS_H - h) / 2;
-
-    ctx.imageSmoothingEnabled  = true;
-    ctx.imageSmoothingQuality  = 'high';
-    ctx.drawImage(item.imgObj, x, y, w, h);
-}
-
-function renderCanvas() {
-    if (!images.length || selIdx >= images.length) return;
-    const cur = images[selIdx];
-    canvasTitle.textContent = `Visualizando: #${pad(selIdx+1)} — ${cur.name}  [Lienzo 1980×980 px]`;
-    navCounter.textContent  = `Imagen ${selIdx+1} de ${images.length}`;
-    drawOnCanvas(mainCanvas, cur);
-}
-
-// ════════════════════════════════════════════════════════════
-// EXPORTACIÓN
-// ════════════════════════════════════════════════════════════
-
-async function getBestBlob(canvas) {
-    let blob = await new Promise(r => canvas.toBlob(r, 'image/png'));
-    if (blob?.size <= MAX_BYTES) return { blob, ext: '.png' };
-
-    for (const q of [0.95, 0.90, 0.85, 0.80, 0.72]) {
-        blob = await new Promise(r => canvas.toBlob(r, 'image/jpeg', q));
-        if (blob?.size <= MAX_BYTES) return { blob, ext: '.jpg' };
-    }
-    return { blob, ext: '.jpg' };
-}
-
-// ════════════════════════════════════════════════════════════
-// GUARDAR EN CARPETA — File System Access API (Chrome/Edge moderno)
-// Si no soporta showDirectoryPicker → descarga un ZIP automáticamente
-// ════════════════════════════════════════════════════════════
-
-async function saveToFolder() {
-    if (!images.length) {
-        showToast('No hay imágenes para guardar', '⚠️', true);
-        return;
-    }
-
-    // Pedir nombre de carpeta al usuario
-    const folderName = prompt(
-        'Nombre de la carpeta donde se guardarán las imágenes:',
-        zipBase || 'Imagenes_Organizadas'
-    );
-    if (!folderName || !folderName.trim()) return;
-    const sanitized = folderName.trim().replace(/[<>:"/\\|?*]/g, '_');
-
-    // ── Rama A: File System Access API disponible (Chrome/Edge) ──────────────
-    if (typeof window.showDirectoryPicker === 'function') {
-        try {
-            // IMPORTANTE: showDirectoryPicker debe ser la PRIMERA llamada async
-            // sin ningún await previo, para que Chrome acepte el gesto del usuario.
-            const dirHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
-
-            // El toast lo mostramos DESPUÉS de que el usuario eligió la carpeta
-            showToast('Carpeta seleccionada. Guardando imágenes...', '📂');
-
-            // Crear subcarpeta con el nombre elegido dentro de donde eligió el usuario
-            let subDir;
-            try {
-                subDir = await dirHandle.getDirectoryHandle(sanitized, { create: true });
-            } catch {
-                subDir = dirHandle;
-            }
-
-            const exp = Object.assign(document.createElement('canvas'), {
-                width: CANVAS_W, height: CANVAS_H
-            });
-
-            showProgress(`Guardando en "${sanitized}"...`,
-                         `Renderizando ${images.length} imágenes a 1980×980 px`);
-
-            try {
-                for (let i = 0; i < images.length; i++) {
-                    updateProgress(i + 1, images.length, `Guardando ${pad(i + 1)}...`);
-                    drawOnCanvas(exp, images[i]);
-                    const { blob, ext } = await getBestBlob(exp);
-
-                    const fileName   = pad(i + 1) + ext;
-                    const fileHandle = await subDir.getFileHandle(fileName, { create: true });
-                    const writable   = await fileHandle.createWritable();
-                    await writable.write(blob);
-                    await writable.close();
-
-                    await tick(10);
-                }
-                showToast(
-                    `¡${images.length} imágenes guardadas en "${sanitized}"!`,
-                    '🎉'
-                );
-            } finally {
-                hideProgress();
-            }
-
-        } catch (err) {
-            hideProgress();
-            if (err.name === 'AbortError') {
-                // El usuario cerró el diálogo — no hacer nada más
-                showToast('Operación cancelada.', '⚠️');
-            } else if (err.name === 'NotAllowedError' || err.name === 'SecurityError') {
-                // Chrome bloqueó por permisos o contexto — fallback a ZIP
-                showToast('Permiso denegado por el navegador. Descargando como ZIP...', '📦');
-                await tick(1200);
-                await _exportZipWithName(sanitized);
-            } else {
-                showToast(`Error: ${err.message}. Descargando como ZIP...`, '⚠️');
-                await tick(1200);
-                await _exportZipWithName(sanitized);
-            }
-        }
-
-    // ── Rama B: Fallback — descargar como ZIP ────────────────────────────────
-    } else {
-        showToast(
-            'Tu navegador no soporta selección de carpeta. Se descargará como ZIP.',
-            '📦'
-        );
-        await tick(1800);
-        await _exportZipWithName(sanitized);
-    }
-}
-
-/** Función interna compartida: genera y descarga un ZIP con el nombre dado */
-async function _exportZipWithName(name) {
-    const exp    = Object.assign(document.createElement('canvas'), {
-        width: CANVAS_W, height: CANVAS_H
-    });
-    const zipOut = new JSZip();
-    const folder = zipOut.folder(name);
-
-    showProgress(`Generando ZIP "${name}.zip"...`,
-                 `Empaquetando ${images.length} imágenes`);
-    try {
-        for (let i = 0; i < images.length; i++) {
-            updateProgress(i + 1, images.length, `Empaquetando ${pad(i + 1)}.png...`);
-            drawOnCanvas(exp, images[i]);
-            const { blob, ext } = await getBestBlob(exp);
-            folder.file(pad(i + 1) + ext, blob);
-            await tick(10);
-        }
-        updateProgress(images.length, images.length, 'Comprimiendo ZIP final...');
-        const content = await zipOut.generateAsync({
-            type: 'blob', compression: 'DEFLATE',
-            compressionOptions: { level: 6 }
-        });
-        const a = Object.assign(document.createElement('a'), {
-            href:     URL.createObjectURL(content),
-            download: name + '.zip'
-        });
-        document.body.appendChild(a); a.click(); document.body.removeChild(a);
-        URL.revokeObjectURL(a.href);
-        showToast(`¡ZIP "${name}.zip" descargado!`, '📦');
-    } finally {
-        hideProgress();
-    }
-}
-
-async function exportZip() {
-    if (!images.length) { showToast('No hay imágenes para exportar', '⚠️', true); return; }
-    const name = prompt('Nombre para el archivo ZIP:', zipBase || 'Imagenes_Organizadas');
-    if (!name || !name.trim()) return;
-    await _exportZipWithName(name.trim().replace(/[<>:"/\\|?*]/g, '_'));
-}
-
-// ════════════════════════════════════════════════════════════
-// UI HELPERS
-// ════════════════════════════════════════════════════════════
-
-function updateStatus() {
-    if (!images.length) {
-        statusText.textContent = '🟢 Listo para cargar imágenes';
-    } else {
-        statusText.textContent =
-            `🟢 ${images.length} imágenes listas  |  Activa: #${pad(selIdx+1)} (${images[selIdx].name})`;
-    }
-}
-
-function showProgress(title, sub) {
-    document.getElementById('progTitle').textContent   = title;
-    document.getElementById('progSub').textContent     = sub;
-    document.getElementById('progFill').style.width    = '0%';
-    document.getElementById('progText').textContent    = 'Iniciando...';
-    document.getElementById('progPercent').textContent = '0%';
-    document.getElementById('progressModal').style.display = 'flex';
-}
-function updateProgress(cur, total, detail) {
-    const pct = Math.round((cur / Math.max(1, total)) * 100);
-    document.getElementById('progFill').style.width    = pct + '%';
-    document.getElementById('progText').textContent    = detail || `${cur} de ${total}`;
-    document.getElementById('progPercent').textContent = pct + '%';
-}
-function hideProgress() {
-    document.getElementById('progressModal').style.display = 'none';
-}
-
-function showToast(msg, icon = '✅', isErr = false) {
-    const t = document.getElementById('toast');
-    document.getElementById('toastMsg').textContent  = msg;
-    document.getElementById('toastIcon').textContent = icon;
-    t.style.borderColor = isErr ? 'var(--danger)' : 'var(--success)';
-    t.classList.add('show');
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => t.classList.remove('show'), 3800);
-}
-
-function pad(n) { return String(n).padStart(2, '0'); }
-function tick(ms = 0) { return new Promise(r => setTimeout(r, ms)); }
-
-function toggleFS() {
-    if (!document.fullscreenElement) {
-        document.documentElement.requestFullscreen().catch(() => {});
-    } else {
-        document.exitFullscreen?.();
-    }
-}
-
-// ════════════════════════════════════════════════════════════
-// INIT
-// ════════════════════════════════════════════════════════════
-rebuildList();
-</script>
+<script src="assets/app.js"></script>
 </body>
 </html>

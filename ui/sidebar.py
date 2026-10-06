@@ -49,19 +49,19 @@ class Sidebar(ttk.Frame):
         top = tk.Frame(sb_header, bg=THEME["bg_sidebar"])
         top.pack(fill=tk.X)
 
-        tk.Label(top, text="📋 Lista de Imágenes",
+        tk.Label(top, text="Lista de Imagenes",
                  font=("Segoe UI", 12, "bold"), fg=THEME["text"],
                  bg=THEME["bg_sidebar"]).pack(side=tk.LEFT)
-        ttk.Button(top, text="🗑️ Vaciar", style="Danger.TButton",
+        ttk.Button(top, text="[x] Vaciar", style="Danger.TButton",
                    command=self.on_clear).pack(side=tk.RIGHT)
 
-        self.count_lbl = tk.Label(sb_header, text="0 imágenes cargadas",
+        self.count_lbl = tk.Label(sb_header, text="0 imagenes cargadas",
                                   font=("Segoe UI", 9), fg=THEME["accent"],
                                   bg=THEME["bg_sidebar"])
         self.count_lbl.pack(anchor=tk.W, pady=(2, 4))
 
         tk.Label(sb_header,
-                 text="💡 Arrastra ☰ para reordenar  •  naranja = destino",
+                 text="Arrastra ≡ para reordenar  •  naranja = destino",
                  font=("Segoe UI", 8), fg=THEME["text_muted"],
                  bg=THEME["bg_sidebar"]).pack(anchor=tk.W)
 
@@ -107,16 +107,16 @@ class Sidebar(ttk.Frame):
         self._card_bgs.clear()
 
         count = len(images_list)
-        self.count_lbl.config(text=f"{count} imágenes cargadas")
+        self.count_lbl.config(text=f"{count} imagenes cargadas")
 
         if count == 0:
             empty = tk.Frame(self.cards_frame, bg=THEME["bg_main"], pady=50)
             empty.pack(fill=tk.X)
-            tk.Label(empty, text="📁 Ninguna imagen cargada",
+            tk.Label(empty, text="[ -- ] Ninguna imagen cargada",
                      fg="#585b70", bg=THEME["bg_main"],
                      font=("Segoe UI", 11, "bold")).pack()
             tk.Label(empty,
-                     text="Haz clic en 'Cargar ZIP / Imágenes'\npara comenzar.",
+                     text="Haz clic en '[+] Cargar ZIP / Imagenes'\npara comenzar.",
                      fg="#45475a", bg=THEME["bg_main"],
                      font=("Segoe UI", 9)).pack(pady=6)
             return
@@ -125,66 +125,82 @@ class Sidebar(ttk.Frame):
             self._build_card(idx, item, selected_index, count)
 
     def _build_card(self, idx, item, sel_idx, total):
-        is_sel    = (idx == sel_idx)
-        card_bg   = THEME["bg_card_active"] if is_sel else THEME["bg_card"]
-        border_c  = THEME["accent"] if is_sel else THEME["border"]
-        border_w  = 2 if is_sel else 1
+        is_sel   = (idx == sel_idx)
+        card_bg  = THEME["bg_card_active"] if is_sel else THEME["bg_card"]
+        border_c = THEME["accent"] if is_sel else THEME["border"]
+        border_w = 2 if is_sel else 1
 
         card = tk.Frame(self.cards_frame, bg=card_bg,
                         highlightbackground=border_c,
                         highlightthickness=border_w,
-                        padx=8, pady=8, cursor="hand2")
-        card.pack(fill=tk.X, padx=6, pady=3)
+                        padx=6, pady=5, cursor="hand2")
+        card.pack(fill=tk.X, padx=4, pady=2)
         self._card_widgets.append(card)
         self._card_bgs.append(card_bg)
 
         row = tk.Frame(card, bg=card_bg)
         row.pack(fill=tk.X)
 
-        handle = tk.Label(row, text="☰",
-                          font=("Segoe UI", 12, "bold"), cursor="fleur",
+        # ── Handle de arrastre ─────────────────────────────
+        handle = tk.Label(row, text="≡",
+                          font=("Segoe UI", 11, "bold"), cursor="fleur",
                           fg=THEME["accent"] if is_sel else THEME["text_muted"],
                           bg=card_bg)
-        handle.pack(side=tk.LEFT, padx=(0, 6))
+        handle.pack(side=tk.LEFT, padx=(0, 5))
 
-        badge = tk.Label(row, text=f" #{idx + 1:02d} ",
+        # ── Badge de posición ──────────────────────────────
+        badge = tk.Label(row, text=f"#{idx + 1:02d}",
                          bg=THEME["success"] if is_sel else THEME["accent"],
-                         fg="#11111b", font=("Segoe UI", 10, "bold"),
-                         padx=5, pady=2)
-        badge.pack(side=tk.LEFT, padx=(0, 8))
+                         fg="#11111b", font=("Segoe UI", 9, "bold"),
+                         padx=4, pady=1)
+        badge.pack(side=tk.LEFT, padx=(0, 6))
 
+        # ── Miniatura ──────────────────────────────────────
         thumb_pil = item.get_thumbnail()
         thumb_tk  = ImageTk.PhotoImage(thumb_pil)
         self._thumb_refs.append(thumb_tk)
         thumb_lbl = tk.Label(row, image=thumb_tk, bg=THEME["bg_header"])
-        thumb_lbl.pack(side=tk.LEFT, padx=(0, 8))
+        thumb_lbl.pack(side=tk.LEFT, padx=(0, 6))
 
-        name_lbl = tk.Label(row, text=item.filename, bg=card_bg,
+        # ── Botones a la DERECHA (pack antes que el nombre) ─
+        # Al hacer pack(side=RIGHT) PRIMERO, tkinter les asigna espacio
+        # antes de calcular cuánto queda para el nombre → nunca se ocultan.
+        btn_box = tk.Frame(row, bg=card_bg)
+        btn_box.pack(side=tk.RIGHT, padx=(4, 0))
+
+        if idx < total - 1:
+            tk.Button(btn_box, text="↓", bg=THEME["border"], fg=THEME["text"],
+                      font=("Segoe UI", 7), relief="flat", width=2, pady=1,
+                      command=lambda i=idx: self.on_reorder(i, i + 1)).pack(side=tk.LEFT, padx=1)
+        if idx > 0:
+            tk.Button(btn_box, text="↑", bg=THEME["border"], fg=THEME["text"],
+                      font=("Segoe UI", 7), relief="flat", width=2, pady=1,
+                      command=lambda i=idx: self.on_reorder(i, i - 1)).pack(side=tk.LEFT, padx=1)
+        tk.Button(btn_box, text="✕", bg="#45475a", fg=THEME["danger"],
+                  font=("Segoe UI", 7), relief="flat", width=2, pady=1,
+                  command=lambda i=idx: self.on_delete(i)).pack(side=tk.LEFT, padx=(2, 0))
+
+        # ── Nombre (DESPUÉS de los botones → ocupa el resto) ─
+        # width=1 + fill=X + expand=True = ocupa el espacio sobrante
+        # pero NUNCA empuja a los botones porque ya están colocados.
+        rel_f = getattr(item, 'relative_folder', '') or ''
+        raw_title = f"{rel_f}/{item.filename}" if rel_f else item.filename
+        display_name = raw_title if len(raw_title) <= 28 else raw_title[:25] + "..."
+
+        name_lbl = tk.Label(row, text=display_name,
+                            bg=card_bg,
                             fg=THEME["text"],
-                            font=("Segoe UI", 9, "bold" if is_sel else "normal"),
-                            anchor="w")
+                            font=("Segoe UI", 8, "bold" if is_sel else "normal"),
+                            anchor="w", justify="left")
         name_lbl.pack(side=tk.LEFT, fill=tk.X, expand=True)
 
-        btn_box = tk.Frame(row, bg=card_bg)
-        btn_box.pack(side=tk.RIGHT)
-
-        if idx > 0:
-            tk.Button(btn_box, text="▲", bg=THEME["border"], fg=THEME["text"],
-                      font=("Segoe UI", 8), relief="flat", width=2,
-                      command=lambda i=idx: self.on_reorder(i, i - 1)).pack(side=tk.LEFT, padx=1)
-        if idx < total - 1:
-            tk.Button(btn_box, text="▼", bg=THEME["border"], fg=THEME["text"],
-                      font=("Segoe UI", 8), relief="flat", width=2,
-                      command=lambda i=idx: self.on_reorder(i, i + 1)).pack(side=tk.LEFT, padx=1)
-        tk.Button(btn_box, text="✖", bg="#45475a", fg=THEME["danger"],
-                  font=("Segoe UI", 8), relief="flat", width=2,
-                  command=lambda i=idx: self.on_delete(i)).pack(side=tk.LEFT, padx=2)
-
-        # Bindings de drag — solo en el handle y la tarjeta
+        # ── Bindings de drag ───────────────────────────────
         for elem in (card, row, name_lbl, badge, thumb_lbl, handle):
             elem.bind("<Button-1>",       lambda e, i=idx: self._on_press(e, i))
             elem.bind("<B1-Motion>",      lambda e, i=idx, it=item: self._on_motion(e, i, it))
             elem.bind("<ButtonRelease-1>", lambda e, i=idx: self._on_release(e, i))
+
+
 
     # ──────────────────────────────────────────────────────────
     # DRAG & DROP — separado en press / motion / release

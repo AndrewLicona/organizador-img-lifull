@@ -64,7 +64,7 @@ class ToastNotification(tk.Frame):
 
     def __init__(self, parent):
         super().__init__(parent, bg=THEME["bg_card_active"], highlightbackground=THEME["accent"], highlightthickness=1, padx=15, pady=10)
-        self.icon_lbl = tk.Label(self, text="ℹ️", font=("Segoe UI", 12), bg=THEME["bg_card_active"], fg=THEME["accent"])
+        self.icon_lbl = tk.Label(self, text="[i]", font=("Segoe UI", 10, "bold"), bg=THEME["bg_card_active"], fg=THEME["accent"])
         self.icon_lbl.pack(side=tk.LEFT, padx=(0, 10))
 
         self.msg_lbl = tk.Label(self, text="", font=("Segoe UI", 9, "bold"), bg=THEME["bg_card_active"], fg=THEME["text"])
@@ -72,7 +72,7 @@ class ToastNotification(tk.Frame):
 
         self._hide_timer = None
 
-    def show(self, message, icon="✅", duration_ms=3000, is_error=False):
+    def show(self, message, icon="[OK]", duration_ms=3000, is_error=False):
         if self._hide_timer:
             self.after_cancel(self._hide_timer)
 
