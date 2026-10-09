@@ -33,6 +33,14 @@ class MainWindow(tk.Tk):
         except Exception:
             self.attributes('-zoomed', True)
 
+        # Establecer icono de ventana
+        icon_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "python_ico.ico")
+        if os.path.exists(icon_path):
+            try:
+                self.iconbitmap(icon_path)
+            except Exception:
+                pass
+
         self.bind("<F11>", self.toggle_fullscreen)
         self.is_fullscreen = False
 

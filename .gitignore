@@ -8,3 +8,5 @@ venv/
 ENV/
 .vscode/
 .idea/
+.venv/
+desktop.ini

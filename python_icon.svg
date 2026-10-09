@@ -1,0 +1,84 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <!-- Filtro de sombra paralela tipo cómic (Drop Shadow) -->
+    <filter id="comic-shadow" x="-10%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="8" dy="12" stdDeviation="0" flood-color="#000000" flood-opacity="1"/>
+    </filter>
+
+    <!-- Trama de puntos estilo Ben-Day (Pop Art) versión Python (Azul / Cian) -->
+    <pattern id="benday-dots-py" x="0" y="0" width="12" height="12" patternUnits="userSpaceOnUse">
+      <circle cx="6" cy="6" r="2.5" fill="#306998" opacity="0.35"/>
+    </pattern>
+
+    <!-- Recorte para la imagen dentro del marco central -->
+    <clipPath id="photo-clip-py">
+      <rect x="140" y="140" width="232" height="232" rx="12"/>
+    </clipPath>
+  </defs>
+
+  <!-- Fondo base del ícono con bordes redondeados (App Icon Shape) - Azul Python -->
+  <rect x="20" y="20" width="472" height="472" rx="96" fill="#306998" stroke="#000000" stroke-width="16"/>
+
+  <!-- Trama de puntos pop-art en el fondo -->
+  <rect x="20" y="20" width="472" height="472" rx="96" fill="url(#benday-dots-py)"/>
+
+  <!-- Destello / Explosión estilo cómic detrás de los marcos - Amarillo Python -->
+  <path d="M 256 60 L 290 120 L 360 80 L 350 150 L 430 150 L 380 210 L 450 256 L 380 302 L 430 362 L 350 362 L 360 432 L 290 392 L 256 452 L 222 392 L 152 432 L 162 362 L 82 362 L 132 302 L 62 256 L 132 210 L 82 150 L 162 150 L 152 80 L 222 120 Z"
+        fill="#FFD43B" stroke="#000000" stroke-width="12" stroke-linejoin="round" filter="url(#comic-shadow)"/>
+
+  <!-- Foto trasera (Efecto de pila / Organización) -->
+  <g transform="rotate(-12 256 256)" filter="url(#comic-shadow)">
+    <rect x="130" y="130" width="252" height="252" rx="20" fill="#FFFFFF" stroke="#000000" stroke-width="12"/>
+    <rect x="150" y="150" width="212" height="212" rx="8" fill="#4B8BBE" stroke="#000000" stroke-width="8"/>
+  </g>
+
+  <!-- Foto principal al frente -->
+  <g transform="rotate(6 256 256)" filter="url(#comic-shadow)">
+    <!-- Marco de fotos Polaroid/Cómic -->
+    <rect x="120" y="120" width="272" height="272" rx="20" fill="#FFFFFF" stroke="#000000" stroke-width="12"/>
+
+    <!-- Contenido de la foto: Emblema Python en estilo Comic Pop Art -->
+    <g clip-path="url(#photo-clip-py)">
+      <!-- Fondo interior del marco -->
+      <rect x="120" y="120" width="272" height="272" fill="#F0F3F8"/>
+
+      <!-- Trama de líneas de velocidad cómic de fondo -->
+      <path d="M 140 140 L 256 256 M 372 140 L 256 256 M 140 372 L 256 256 M 372 372 L 256 256 M 256 140 L 256 372 M 140 256 L 372 256" stroke="#D1D8E0" stroke-width="4"/>
+
+      <!-- Serpiente Superior Azul (Python) -->
+      <g transform="translate(180, 168) scale(0.72)">
+        <!-- Cuerpo Azul -->
+        <path d="M 105 0 C 47 0 50 26 50 26 L 50 52 L 105 52 L 105 60 L 28 60 C 28 60 0 57 0 115 C 0 173 25 170 25 170 L 40 170 L 40 145 C 40 145 39 115 70 115 L 124 115 C 124 115 152 116 152 88 L 152 27 C 152 27 155 0 105 0 Z"
+              fill="#306998" stroke="#000000" stroke-width="11" stroke-linejoin="round"/>
+        <!-- Ojo Superior -->
+        <circle cx="73" cy="26" r="8" fill="#FFFFFF" stroke="#000000" stroke-width="4"/>
+        <circle cx="74" cy="26" r="4" fill="#000000"/>
+
+        <!-- Cuerpo Amarillo -->
+        <path d="M 103 208 C 161 208 158 182 158 182 L 158 156 L 103 156 L 103 148 L 180 148 C 180 148 208 151 208 93 C 208 35 183 38 183 38 L 168 38 L 168 63 C 168 63 169 93 138 93 L 84 93 C 84 93 56 92 56 120 L 56 181 C 56 181 53 208 103 208 Z"
+              fill="#FFD43B" stroke="#000000" stroke-width="11" stroke-linejoin="round"/>
+        <!-- Ojo Inferior -->
+        <circle cx="135" cy="182" r="8" fill="#FFFFFF" stroke="#000000" stroke-width="4"/>
+        <circle cx="134" cy="182" r="4" fill="#000000"/>
+      </g>
+    </g>
+
+    <!-- Borde del área de la imagen dentro del marco -->
+    <rect x="140" y="140" width="232" height="232" rx="12" fill="none" stroke="#000000" stroke-width="10"/>
+  </g>
+
+  <!-- Burbuja de diálogo con etiqueta de organización "PY!" -->
+  <g transform="translate(250, 280)" filter="url(#comic-shadow)">
+    <!-- Forma de la nube/burbuja -->
+    <path d="M 30 0 C 10 0, 0 15, 0 30 C 0 40, 8 50, 15 55 L 5 75 L 30 65 C 35 68, 42 70, 50 70 C 80 70, 100 55, 100 35 C 100 15, 75 0, 30 0 Z"
+          fill="#FFFFFF" stroke="#000000" stroke-width="10" stroke-linejoin="round"/>
+    <!-- Texto estilo cómic -->
+    <text x="48" y="44" font-family="'Impact', 'Arial Black', sans-serif" font-size="28" font-weight="900" fill="#306998" text-anchor="middle" font-style="italic">
+      PY!
+    </text>
+  </g>
+
+  <!-- Brillos / Destellos Cómic (Action Lines) en las esquinas -->
+  <path d="M 60 90 L 90 100 M 80 70 L 100 90 M 50 120 L 75 125" stroke="#FFFFFF" stroke-width="8" stroke-linecap="round"/>
+  <path d="M 430 400 L 400 410 M 440 430 L 420 420" stroke="#FFFFFF" stroke-width="8" stroke-linecap="round"/>
+</svg>
