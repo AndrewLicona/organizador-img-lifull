@@ -10,23 +10,38 @@ Para facilitar el mantenimiento a futuro, la interfaz y la lógica de negocio ha
 
 ```
 OrganizadorImagenes/
-├── app.py                      # Punto de entrada principal
-├── requirements.txt            # Dependencias mínimas (Pillow >= 10.0.0)
-├── iniciar.bat                 # Lanzador inteligente a prueba de fallos
-├── Crear_Acceso_Directo.bat    # Generador de icono en el Escritorio
-├── index.html                  # Versión Web completa (con modo Pantalla Completa)
+├── app.py                      # Punto de entrada Python
+├── index.html                  # Punto de entrada Web
+├── requirements.txt            # Dependencias Python (Pillow >= 10.0.0)
 │
-├── core/                       # Núcleo de lógica y procesamiento
-│   ├── image_processor.py      # Renderizado 1980x980 px, centrado y compresión (<= 1.5 MB)
-│   ├── archive_handler.py      # Descompresión y gestión de temporales
-│   └── exporter.py             # Exportador dual (Carpeta descomprimida y Archivo ZIP)
+├── assets/                     # Recursos de la versión Web
+│   ├── app.js                  # Entry point de la Web
+│   ├── styles.css              # Estilos
+│   └── modules/                # Módulos ESM
 │
-└── ui/                         # Componentes de la Interfaz Gráfica (Tkinter)
-    ├── styles.py               # Paleta de colores y estilos globales centralizados
-    ├── header_bar.py           # Barra superior con botones de carga y exportación
-    ├── sidebar.py              # Panel lateral con lista Drag & Drop y miniaturas
-    ├── canvas_view.py          # Visor central del lienzo con controles de margen y navegación
-    └── main_window.py          # Orquestador principal (se abre en Pantalla Completa)
+├── core/                       # Núcleo de lógica y procesamiento (Python)
+│   ├── image_processor.py
+│   ├── archive_handler.py
+│   └── exporter.py
+│
+├── ui/                         # Componentes de la Interfaz Gráfica (Tkinter)
+│   ├── styles.py
+│   ├── header_bar.py
+│   ├── sidebar.py
+│   ├── canvas_view.py
+│   ├── progress_dialog.py
+│   └── main_window.py
+│
+└── scripts/                    # ★ Lanzadores, iconos y helpers
+    ├── README.md               # Documentación de esta carpeta
+    ├── iniciar.bat             # Lanza versión Python
+    ├── iniciar_web.bat         # Lanza versión Web (servidor + navegador)
+    ├── actualizar.bat          # git pull + relanza
+    ├── Crear_Acceso_Directo.bat # Crea iconos en el Escritorio
+    ├── crear_icono.vbs         # Helper para los iconos
+    ├── ico.ico                 # Icono Web
+    ├── python_ico.ico          # Icono Python
+    └── python_icon.svg
 ```
 
 ---

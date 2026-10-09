@@ -52,7 +52,7 @@ function showFileProtocolOverlay() {
                 directamente con doble clic (protocolo <code>file://</code>).
             </p>
             <p style="margin:0 0 22px;color:#cdd6f4;">
-                Ejecuta <code style="background:#1e1e2e;padding:3px 8px;border-radius:4px;color:#a6e3a1;font-weight:700;">iniciar_web.bat</code>
+                Ejecuta <code style="background:#1e1e2e;padding:3px 8px;border-radius:4px;color:#a6e3a1;font-weight:700;">scripts\iniciar_web.bat</code>
                 para iniciar un servidor local en
                 <code style="background:#1e1e2e;padding:2px 6px;border-radius:4px;">http://localhost:8080</code>.
             </p>

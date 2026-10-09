@@ -1,6 +1,8 @@
 @echo off
 title Actualizar Organizador de Imagenes
-cd /d "%~dp0"
+
+:: Cambiamos a la raiz del proyecto
+cd /d "%~dp0\.."
 
 echo ====================================================
 echo  Actualizador - Organizador de Imagenes

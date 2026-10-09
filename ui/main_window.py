@@ -34,7 +34,7 @@ class MainWindow(tk.Tk):
             self.attributes('-zoomed', True)
 
         # Establecer icono de ventana
-        icon_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "python_ico.ico")
+        icon_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "scripts", "python_ico.ico")
         if os.path.exists(icon_path):
             try:
                 self.iconbitmap(icon_path)

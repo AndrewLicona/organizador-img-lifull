@@ -1,6 +1,8 @@
 @echo off
 title Organizador de Imagenes - Web
-cd /d "%~dp0"
+
+:: Cambiamos a la raiz del proyecto (un nivel arriba de scripts/)
+cd /d "%~dp0\.."
 
 :: ═══════════════════════════════════════════════════════════════
 :: LANZADOR "TODO EN UNO" DE LA VERSION WEB
@@ -38,9 +40,9 @@ if not defined PYEXE (
 :: ── 2) Crear iconos de escritorio si no existen ─────────────
 set "DESKTOP=%USERPROFILE%\Desktop"
 if not exist "%DESKTOP%\Organizador de Imagenes (Web).lnk" (
-    if exist "crear_icono.vbs" (
+    if exist "scripts\crear_icono.vbs" (
         echo  [setup] Creando accesos directos en el Escritorio...
-        cscript //nologo crear_icono.vbs >nul 2>&1
+        cscript //nologo "scripts\crear_icono.vbs" >nul 2>&1
     )
 )
 

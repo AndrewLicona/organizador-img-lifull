@@ -3,12 +3,13 @@ Set FSO      = CreateObject("Scripting.FileSystemObject")
 
 strDesktop    = WshShell.SpecialFolders("Desktop")
 strCurrentDir = FSO.GetParentFolderName(WScript.ScriptFullName)
+strProjectDir = FSO.GetParentFolderName(strCurrentDir)
 
 ' ── 1. Acceso directo a la APP PYTHON (iniciar.bat con python_ico.ico) ───────────
 strAppLnk = strDesktop & "\Organizador de Imagenes.lnk"
 Set oApp  = WshShell.CreateShortcut(strAppLnk)
-oApp.TargetPath       = strCurrentDir & "\iniciar.bat"
-oApp.WorkingDirectory = strCurrentDir
+oApp.TargetPath       = strProjectDir & "\scripts\iniciar.bat"
+oApp.WorkingDirectory = strProjectDir
 oApp.WindowStyle      = 7
 oApp.Description      = "Organizador de Imagenes - App Python (Lienzo 1980x980 px)"
 If FSO.FileExists(strCurrentDir & "\python_ico.ico") Then
@@ -21,8 +22,8 @@ oApp.Save
 ' ── 2. Acceso directo al SERVIDOR WEB LOCAL (iniciar_web.bat con ico.ico) ────────
 strWebLnk = strDesktop & "\Organizador de Imagenes (Web).lnk"
 Set oWeb  = WshShell.CreateShortcut(strWebLnk)
-oWeb.TargetPath       = strCurrentDir & "\iniciar_web.bat"
-oWeb.WorkingDirectory = strCurrentDir
+oWeb.TargetPath       = strProjectDir & "\scripts\iniciar_web.bat"
+oWeb.WorkingDirectory = strProjectDir
 oWeb.WindowStyle      = 7
 oWeb.Description      = "Organizador de Imagenes - Version Web (Servidor Local 8080)"
 If FSO.FileExists(strCurrentDir & "\ico.ico") Then
@@ -32,6 +33,6 @@ Else
 End If
 oWeb.Save
 
-WScript.Echo "Accesos directos creados en el Escritorio con sus iconos personalizados:" & vbCrLf & _
-             "  [PY] Organizador de Imagenes.lnk  -> App Python (python_ico.ico)" & vbCrLf & _
-             "  [WEB] Organizador de Imagenes (Web).lnk -> Servidor Web Local (ico.ico)"
+WScript.Echo "Accesos directos creados en el Escritorio:" & vbCrLf & _
+             "  [PY]  Organizador de Imagenes.lnk" & vbCrLf & _
+             "  [WEB] Organizador de Imagenes (Web).lnk"

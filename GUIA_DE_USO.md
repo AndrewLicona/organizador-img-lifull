@@ -6,14 +6,15 @@ Bienvenido a la guía completa del **Organizador de Imágenes (Lienzo Individual
 
 ## 🗂️ 1. Resumen de Archivos Ejecutables
 
-En la carpeta del proyecto dispones de los siguientes ejecutables según tu necesidad:
+Los lanzadores están en la carpeta `scripts/`. En ella dispones de los siguientes según tu necesidad:
 
 | Archivo | ¿Para qué sirve? | ¿Cuándo usarlo? |
 | :--- | :--- | :--- |
-| **`Crear_Acceso_Directo.bat`** | Crea el icono **"Organizador de Imagenes"** en tu Escritorio de Windows. | Ejecútalo una vez para tener acceso rápido en el Escritorio. |
-| **`iniciar.bat`** | Lanzador inteligente universal. | Úsalo para abrir la app (si tienes Python abre la versión de escritorio; si no, abre la versión Web). |
-| **`instalar.bat`** | Crea el entorno virtual aislado (`venv`) e instala librerías. | Úsalo si tienes Python y quieres aislar las dependencias para tus compañeros. |
-| **`index.html`** | Aplicación Web interactiva directa (funciona sin instalar nada). | Haz doble clic para abrirla en Google Chrome, Microsoft Edge o cualquier navegador. |
+| **`scripts/Crear_Acceso_Directo.bat`** | Crea los iconos **"Organizador de Imagenes"** y **"Organizador de Imagenes (Web)"** en tu Escritorio de Windows. | Ejecútalo una vez para tener acceso rápido en el Escritorio. |
+| **`scripts/iniciar.bat`** | Lanza la versión **Python** (escritorio con Tkinter). | Úsalo cuando tengas Python y quieras la app nativa. |
+| **`scripts/iniciar_web.bat`** | Lanza la versión **Web** (arranca servidor local + abre navegador en http://localhost:8080). | Úsalo para usar la app desde el navegador. |
+| **`scripts/actualizar.bat`** | Hace `git pull` y relanza la versión Web. | Úsalo cuando hay cambios nuevos en GitHub. |
+| **`index.html`** | Aplicación Web interactiva (debe servirse por HTTP, ver abajo). | No abrir con doble clic — usar `iniciar_web.bat`. |
 | **`app.py`** | Código principal de la aplicación de escritorio en Python. | Ejecutado automáticamente por `iniciar.bat`. |
 
 ---
@@ -21,14 +22,17 @@ En la carpeta del proyecto dispones de los siguientes ejecutables según tu nece
 ## 🚀 2. Cómo empezar a usar el programa
 
 ### Opción A (Recomendada y Más Fácil): Usar el Icono del Escritorio
-1. Entra en la carpeta del proyecto: `C:\Users\Andrew_Licona\Desktop\OrganizadorImagenes`.
+1. Entra en la carpeta del proyecto: `C:\Users\Andrew_Licona\Desktop\OrganizadorImagenes\scripts\`.
 2. Haz doble clic en **`Crear_Acceso_Directo.bat`**.
-3. Verás que en tu Escritorio aparece el icono **`Organizador de Imagenes`**.
-4. ¡Listo! A partir de ahora, tú y tus compañeros solo deben hacer doble clic en ese icono del Escritorio.
+3. Verás que en tu Escritorio aparecen dos iconos:
+   - **`Organizador de Imagenes`** → versión Python
+   - **`Organizador de Imagenes (Web)`** → versión Web
+4. ¡Listo! A partir de ahora solo haz doble clic en el icono que prefieras.
 
-### Opción B: Uso Directo en el Navegador (Sin Instalar Nada)
-1. Haz doble clic en el archivo **`index.html`**.
-2. Se abrirá de inmediato en tu navegador favorito con pantalla completa y todas las herramientas listas.
+### Opción B: Lanzar directamente desde la carpeta `scripts/`
+1. Doble clic en **`scripts/iniciar.bat`** (Python) o **`scripts/iniciar_web.bat`** (Web).
+2. La Web se abrirá automáticamente en tu navegador predeterminado.
+   ⚠️ No abras `index.html` directamente con doble clic: la Web usa módulos JavaScript que requieren un servidor HTTP.
 
 ---
 
@@ -85,5 +89,5 @@ En la carpeta del proyecto dispones de los siguientes ejecutables según tu nece
 
 Si deseas compartir este proyecto con otros compañeros de trabajo:
 1. Pásales la carpeta completa **`OrganizadorImagenes`**.
-2. Indícales que solo deben hacer doble clic en **`Crear_Acceso_Directo.bat`**.
+2. Indícales que solo deben hacer doble clic en **`scripts/Crear_Acceso_Directo.bat`**.
 3. ¡Ya podrán usar el programa haciendo doble clic en el icono del Escritorio!

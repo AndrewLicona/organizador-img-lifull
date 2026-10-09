@@ -1,7 +1,9 @@
 @echo off
 setlocal enabledelayedexpansion
 title Organizador de Imagenes - Lienzo 1980x980
-cd /d "%~dp0"
+
+:: Cambiamos a la raiz del proyecto (un nivel arriba de scripts/)
+cd /d "%~dp0\.."
 
 :: ═══════════════════════════════════════════════════════════════
 :: 1. Entorno virtual local (si se creó en este PC)
@@ -118,5 +120,6 @@ if /i "!PYEXE:~-10!" == "python.exe" (
     if not exist "!PYEXE_W!" set "PYEXE_W=!PYEXE!"
 )
 
-start "" "!PYEXE_W!" "%~dp0app.py"
+:: Lanzar la app Python. El cwd ya es la raiz del proyecto.
+start "" "!PYEXE_W!" "app.py"
 exit /b 0
