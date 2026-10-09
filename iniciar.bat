@@ -3,9 +3,9 @@ setlocal enabledelayedexpansion
 title Organizador de Imagenes - Lienzo 1980x980
 cd /d "%~dp0"
 
-:: ═══════════════════════════════════════════════════════
+:: ═══════════════════════════════════════════════════════════════
 :: 1. Entorno virtual local (si se creó en este PC)
-:: ═══════════════════════════════════════════════════════
+:: ═══════════════════════════════════════════════════════════════
 if exist "venv\Scripts\pythonw.exe" (
     start "" "venv\Scripts\pythonw.exe" "app.py"
     exit /b 0
@@ -15,10 +15,10 @@ if exist "venv\Scripts\python.exe" (
     exit /b 0
 )
 
-:: ═══════════════════════════════════════════════════════
+:: ═══════════════════════════════════════════════════════════════
 :: 2. Buscar Python instalado en el sistema
 ::    Orden: PATH → launcher 'py' → rutas conocidas (varios usuarios/versiones)
-:: ═══════════════════════════════════════════════════════
+:: ═══════════════════════════════════════════════════════════════
 set "PYEXE="
 
 :: 2a. Probar 'python' en PATH
@@ -76,20 +76,34 @@ for /d %%D in ("%LOCALAPPDATA%\Programs\Python\Python*") do (
     )
 )
 
-:: ═══════════════════════════════════════════════════════
-:: 3. No se encontro Python → abrir version web
-:: ═══════════════════════════════════════════════════════
+:: ═══════════════════════════════════════════════════════════════
+:: 3. No se encontro Python → mostrar instrucciones
+::    (La version web ahora usa modulos JS y requiere HTTP server)
+:: ═══════════════════════════════════════════════════════════════
 echo.
-echo  Python no fue encontrado en este PC.
-echo  Abriendo la version Web en tu navegador...
+echo  ===================================================
+echo   Python no fue encontrado en este PC.
+echo  ===================================================
 echo.
-:: Usar cmd /c start para abrir el HTML con el programa asociado
-cmd /c start "" "%~dp0index.html"
+echo  La version Web (index.html) ahora usa modulos de JavaScript
+echo  que requieren servirse por HTTP, no se puede abrir con doble clic.
+echo.
+echo  Opciones:
+echo    A) Instala Python desde https://www.python.org/downloads/
+echo       y vuelve a ejecutar este archivo.
+echo.
+echo    B) Si tienes Node.js, ejecuta en esta carpeta:
+echo         npx http-server -p 8080 -c-1
+echo.
+echo  Si ya tienes Python en una ruta no estandar, editalo
+echo  en este .bat (seccion "2c").
+echo.
+pause
 exit /b 0
 
-:: ═══════════════════════════════════════════════════════
+:: ═══════════════════════════════════════════════════════════════
 :: 4. Python encontrado → instalar dependencias y ejecutar
-:: ═══════════════════════════════════════════════════════
+:: ═══════════════════════════════════════════════════════════════
 :found
 echo.
 echo  Python encontrado: !PYEXE!

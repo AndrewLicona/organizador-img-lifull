@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v4.0 — Estructura separada: CSS/JS externos · Carpetas preservadas · Flechas de teclado -->
+<!-- v5.1 — JS modular (ES Modules) en /assets/modules/ · Servir por HTTP (iniciar_web.bat) -->
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -8,7 +8,7 @@
     <link rel="icon" type="image/x-icon" href="ico.ico">
     <link rel="shortcut icon" href="ico.ico">
     <link rel="stylesheet" href="assets/styles.css">
-    <!-- JSZip + SortableJS -->
+    <!-- Librerías externas (CDN, no se importan como módulos) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
 </head>
@@ -288,6 +288,6 @@
     <span>Lienzo: 1980 × 980 px &nbsp;|&nbsp; Fondo Blanco &nbsp;|&nbsp; Máx 1.5 MB</span>
 </footer>
 
-<script src="assets/app.js"></script>
+<script type="module" src="assets/app.js"></script>
 </body>
 </html>
