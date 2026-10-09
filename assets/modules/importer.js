@@ -73,29 +73,25 @@ async function processZip(file) {
     }
 }
 
-function addImage(blob, name, folder) {
-    return new Promise((resolve, reject) => {
-        blobToDataURL(blob)
-            .then(dataUrl => loadImage(dataUrl))
-            .then(img => {
-                state.images.push({
-                    id:       genId(),
-                    name,
-                    folder,
-                    blob,
-                    dataUrl,
-                    imgObj:   img,
-                    zoom:     1,
-                    panX:     0,
-                    panY:     0,
-                    rotation: 0,
-                    fitMode:  'contain'
-                });
-                resolve();
-            })
-            .catch(err => {
-                console.warn('[importer] No se pudo añadir', name, err);
-                resolve();   // seguimos con el resto
-            });
-    });
+async function addImage(blob, name, folder) {
+    try {
+        const dataUrl = await blobToDataURL(blob);
+        const img     = await loadImage(dataUrl);
+        state.images.push({
+            id:       genId(),
+            name,
+            folder,
+            blob,
+            dataUrl,
+            imgObj:   img,
+            zoom:     1,
+            panX:     0,
+            panY:     0,
+            rotation: 0,
+            fitMode:  'contain'
+        });
+    } catch (err) {
+        // No interrumpimos el lote: avisamos y seguimos con el resto
+        console.warn('[importer] No se pudo añadir', name, err);
+    }
 }
