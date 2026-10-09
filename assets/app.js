@@ -133,23 +133,9 @@ renderCanvas();
 updateHistoryButtons();
 updateStatus();
 
-// Indicador de versión en el title (debug de caché)
-// Si ves "build b9bbf55" o más reciente en la pestaña del navegador,
-// tu caché está limpia. Si ves otra cosa, presiona Ctrl+Shift+R.
+// Indicador de versión en consola y title (debug de caché)
 if (typeof document !== 'undefined') {
-    const prevTitle = document.title;
-    document.title = '[v' + (window.__BUILD__ || '?') + '] ' + prevTitle;
     document.body.setAttribute('data-build', window.__BUILD__ || 'desconocido');
-    console.log('%c[Organizador] build = ' + (window.__BUILD__ || '?'),
+    console.log('%c[Organizador] build = ' + (window.__BUILD__ || 'dev'),
         'background:#89b4fa;color:#0c0c14;padding:2px 6px;border-radius:3px;font-weight:700');
-
-    // Indicador VISIBLE en la cabecera (no solo en el title)
-    const brand = document.querySelector('.brand__sub');
-    if (brand) {
-        const buildTag = document.createElement('span');
-        buildTag.style.cssText = 'margin-left:10px;padding:2px 7px;background:#89b4fa;color:#0c0c14;border-radius:3px;font-family:monospace;font-size:10px;font-weight:700;letter-spacing:0.5px;';
-        buildTag.textContent = 'build ' + (window.__BUILD__ || '?');
-        buildTag.title = 'Si este build NO coincide con el ultimo commit en GitHub, presiona Ctrl+Shift+R para borrar la cache';
-        brand.appendChild(buildTag);
-    }
 }
