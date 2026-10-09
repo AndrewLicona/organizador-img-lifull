@@ -16,7 +16,7 @@ import { state, undo, redo, pushHistory } from './modules/state.js';
 import { dom } from './modules/dom.js';
 import { toggleFullscreen } from './modules/utils.js';
 import { initList, rebuildList, updateStatus } from './modules/list.js';
-import { initDnd, initSortable, initFileDrop } from './modules/dnd.js';
+import { initDnd, initFileDrop } from './modules/dnd.js';
 import { renderCanvas } from './modules/canvas.js';
 import { initCanvasInteractions } from './modules/canvas-interactions.js';
 import { initKeyboard } from './modules/keyboard.js';
@@ -122,7 +122,7 @@ function doHistory(fn, okMsg, emptyMsg) {
 }
 
 // ── 4. Inicialización de subsistemas ──────────────────────────
-initSortable();
+// (SortableJS se inicializa la primera vez vía rebuildList → refreshSortables)
 initFileDrop();
 initCanvasInteractions();
 initKeyboard();

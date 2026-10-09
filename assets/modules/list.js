@@ -17,6 +17,8 @@
 import { state } from './state.js';
 import { dom, svgIcon } from './dom.js';
 import { groupByFolder, truncate, pad } from './utils.js';
+import { updateHistoryButtons } from './ui.js';
+import { refreshSortables } from './dnd.js';
 
 // Callbacks inyectados por el entry point (evita acoplamiento circular)
 let onSelect  = () => {};
@@ -56,6 +58,7 @@ export function rebuildList() {
         if (folder !== '__root__') {
             const gh = document.createElement('div');
             gh.className = 'folder-group';
+            gh.dataset.folderName = folder;
             gh.innerHTML =
                 `<div class="folder-group__header" data-toggle="1">` +
                     `${svgIcon('folder')}` +
@@ -84,6 +87,7 @@ export function rebuildList() {
     updateStatus();
     syncAdjustmentControls();   // delegado a adjustments.js
     updateImgCount();
+    refreshSortables();         // re-asocia SortableJS a los nuevos nodos
 }
 
 // ── ESTADO VACÍO ──────────────────────────────────────────────
