@@ -132,3 +132,64 @@ rebuildList();
 renderCanvas();
 updateHistoryButtons();
 updateStatus();
+
+// Indicador de versión en el title (debug de caché)
+// Si ves "build b9bbf55" o más reciente en la pestaña del navegador,
+// tu caché está limpia. Si ves otra cosa, presiona Ctrl+Shift+R.
+if (typeof document !== 'undefined') {
+    const prevTitle = document.title;
+    document.title = '[v' + (window.__BUILD__ || '?') + '] ' + prevTitle;
+    document.body.setAttribute('data-build', window.__BUILD__ || 'desconocido');
+    console.log('%c[Organizador] build = ' + (window.__BUILD__ || '?'),
+        'background:#89b4fa;color:#0c0c14;padding:2px 6px;border-radius:3px;font-weight:700');
+
+    // ── Botón DEMO: inyecta 5 imágenes de prueba sin file picker ──
+    // Útil para diagnosticar si el problema es el file dialog o el flujo de import.
+    const headerActions = document.querySelector('.header-actions');
+    if (headerActions) {
+        const demoBtn = document.createElement('button');
+        demoBtn.className = 'btn-secondary';
+        demoBtn.textContent = '[Demo] Cargar 5 imágenes';
+        demoBtn.title = 'Inyecta 5 imágenes de prueba (no requiere seleccionar archivos)';
+        demoBtn.style.cssText = 'background:#45475a;color:#a6e3a1;border:1px dashed #a6e3a1;';
+        demoBtn.addEventListener('click', loadDemoImages);
+        headerActions.insertBefore(demoBtn, headerActions.firstChild);
+    }
+}
+
+async function loadDemoImages() {
+    const { state, genId } = await import('./modules/state.js');
+    const { rebuildList } = await import('./modules/list.js');
+    const { renderCanvas } = await import('./modules/canvas.js');
+    const { showToast } = await import('./modules/ui.js');
+
+    const colors = ['#89b4fa', '#a6e3a1', '#fab387', '#f38ba8', '#cba6f7'];
+    const labels = ['Demo 1', 'Demo 2', 'Demo 3', 'Demo 4', 'Demo 5'];
+    for (let i = 0; i < 5; i++) {
+        const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="640" height="400">
+            <rect width="640" height="400" fill="${colors[i]}"/>
+            <text x="320" y="210" text-anchor="middle" fill="#0c0c14" font-size="64" font-weight="bold">${labels[i]}</text>
+        </svg>`;
+        const dataUrl = 'data:image/svg+xml;base64,' + btoa(svg);
+        // Cargar como imagen real
+        const img = new Image();
+        await new Promise((resolve) => {
+            img.onload = resolve;
+            img.onerror = resolve;
+            img.src = dataUrl;
+        });
+        state.images.push({
+            id: genId(),
+            name: `demo_${i+1}.svg`,
+            folder: '',
+            blob: null,
+            dataUrl,
+            imgObj: img,
+            zoom: 1, panX: 0, panY: 0, rotation: 0, fitMode: 'contain'
+        });
+    }
+    state.selIdx = 0;
+    rebuildList();
+    renderCanvas();
+    showToast('5 imágenes DEMO inyectadas', 'ok');
+}
