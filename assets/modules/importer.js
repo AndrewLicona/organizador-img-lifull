@@ -39,9 +39,16 @@ export async function handleFiles(files) {
 
     if (state.images.length > 0) {
         state.selIdx = 0;
-        rebuildList();
-        renderCanvas();
-        showToast(`${state.images.length} imágenes cargadas`, 'ok');
+        try {
+            rebuildList();
+            renderCanvas();
+            showToast(`${state.images.length} imágenes cargadas`, 'ok');
+        } catch (err) {
+            console.error('[importer] Error en render:', err);
+            showToast(`Error al mostrar: ${err.message}`, 'error');
+        }
+    } else {
+        showToast('Ninguna imagen valida en el archivo', 'warn');
     }
 }
 
