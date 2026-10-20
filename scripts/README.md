@@ -11,7 +11,7 @@ Esta carpeta contiene todos los **lanzadores y recursos** del proyecto. Mantener
 | **`iniciar.bat`** | Lanza la versión **Python** (escritorio) | Cuando quieras la app nativa con Tkinter |
 | **`iniciar_web.bat`** | Lanza la versión **Web** (servidor local + navegador) | Cuando quieras usar la app desde el navegador |
 | **`actualizar.bat`** | Hace `git pull` + reinicia el servidor web | Cuando hay cambios nuevos en GitHub |
-| **`Crear_Acceso_Directo.bat`** | Crea los iconos del Escritorio manualmente | Solo si necesitas regenerar los `.lnk` |
+| **`Crear_Acceso_Directo.bat`** | Crea los accesos directos en el Escritorio | Crea los dos iconos (Python y Web) con sus logos |
 
 ### Flujo recomendado
 
@@ -28,14 +28,6 @@ Si prefieres no usar iconos de Escritorio, también puedes correr los `.bat` dir
 
 ---
 
-## 🪟 Helper `.vbs`
-
-| Archivo | ¿Para qué sirve? |
-|---|---|
-| **`crear_icono.vbs`** | Script auxiliar llamado por `Crear_Acceso_Directo.bat` (y por `iniciar_web.bat` la primera vez) que crea los accesos directos del Escritorio usando la API de Windows Shell. No ejecutar directamente. |
-
----
-
 ## 🎨 Iconos `.ico` / `.svg`
 
 | Archivo | ¿Para qué sirve? |
@@ -48,6 +40,5 @@ Si prefieres no usar iconos de Escritorio, también puedes correr los `.bat` dir
 
 ## 🔧 Notas técnicas
 
-- Todos los `.bat` hacen `cd /d %~dp0\..` al inicio para posicionarse en la raíz del proyecto, así el resto de rutas relativas funcionan sin importar desde dónde se invoquen.
-- `iniciar_web.bat` detecta automáticamente si ya hay un servidor corriendo en :8080 para evitar duplicados.
-- `iniciar_web.bat` usa `pythonw.exe` (cuando existe) para arrancar el servidor sin ventana negra de consola.
+* Todos los `.bat` navegan automáticamente a la raíz del proyecto (`cd /d "%~dp0\.."`) para que el entorno de ejecución siempre sea consistente, sin importar desde dónde se lancen.
+* Detectan automáticamente instalaciones de Python 3.8 a 3.14+, entornos virtuales (`venv`) y el lanzador oficial `py`.
